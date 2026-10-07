@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DELAVEC
+  VODJA
+}
+
+enum OrderStatus {
+  NOV
+  V_DELU
+  ZAKLJUCEN
+  PROBLEM
+}
+
+enum PhotoKind {
+  PRED
+  MED
+  KONCANO
+  PROBLEM
+}
+
+enum ReportStatus {
+  OSNUTEK
+  ODDANO
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role
+  workerOrders WorkOrder[]   @relation("worker")
+  managerOrders WorkOrder[]  @relation("manager")
+  timeEntries  TimeEntry[]
+  workLogs     WorkLog[]
+  photos       Photo[]
+  reports      DailyReport[]
+}
+
+model Project {
+  id         String      @id @default(uuid())
+  name       String
+  location   String
+  workOrders WorkOrder[]
+}
+
+model WorkOrder {
+  id           String      @id @default(uuid())
+  number       String      @unique
+  projectId    String
+  project      Project     @relation(fields: [projectId], references: [id])
+  workerId     String
+  worker       User        @relation("worker", fields: [workerId], references: [id])
+  managerId    String
+  manager      User        @relation("manager", fields: [managerId], references: [id])
+  description  String
+  plannedQty   Float?
+  plannedUnit  String?
+  plannedHours Float?
+  dueDate      DateTime
+  status       OrderStatus @default(NOV)
+  materials    Material[]
+  timeEntries  TimeEntry[]
+  workLogs     WorkLog[]
+  photos       Photo[]
+}
+
+model Material {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  name        String
+  usedQty     Float?
+}
+
+model TimeEntry {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  startedAt   DateTime
+  endedAt     DateTime?
+}
+
+model WorkLog {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  description String
+  quantity    Float?
+  unit        String?
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+model Photo {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  kind        PhotoKind
+  path        String
+  takenAt     DateTime
+}
+
+model DailyReport {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  date        DateTime     @db.Date
+  status      ReportStatus @default(OSNUTEK)
+  submittedAt DateTime?
+
+  @@unique([userId, date])
+}
