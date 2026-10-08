@@ -117,6 +117,15 @@ workOrdersRouter.patch("/:id/status", requireRole("DELAVEC"), async (req, res) =
   if (!transitions[order.status].includes(parsed.data.status)) {
     return res.status(400).json({ error: "Ta prehod ni dovoljen" });
   }
+
+  if (parsed.data.status === "ZAKLJUCEN") {
+    const running = await prisma.timeEntry.findFirst({
+      where: { workOrderId: id, endedAt: null },
+    });
+    if (running) {
+      return res.status(400).json({ error: "Najprej končaj delo" });
+    }
+  }
   const updated = await prisma.workOrder.update({
     where: { id },
     data: { status: parsed.data.status },
