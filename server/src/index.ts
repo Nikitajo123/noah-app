@@ -8,6 +8,7 @@ import { timeRouter } from "./routes/time";
 import { logsRouter, materialsRouter } from "./routes/logs";
 import path from "path";
 import { photosRouter } from "./routes/photos";
+import { overviewRouter, reportsRouter } from "./routes/reports";
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,8 @@ app.use("/time", timeRouter);
 app.use("/logs", logsRouter);
 app.use("/materials", materialsRouter);
 app.use("/photos", photosRouter);
+app.use("/overview", overviewRouter);
+app.use("/reports", reportsRouter);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.listen(3000, () => {
