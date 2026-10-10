@@ -1,4 +1,5 @@
 export type Status = "NOV" | "V_DELU" | "ZAKLJUCEN" | "PROBLEM";
+export type PhotoKind = "PRED" | "MED" | "KONCANO" | "PROBLEM";
 
 export type Project = { id: string; name: string; location: string };
 export type Material = { id: string; name: string; usedQty: number | null };
@@ -22,9 +23,27 @@ export type WorkOrder = {
   materials: Material[];
 };
 
+export type WorkLog = {
+  id: string;
+  description: string;
+  quantity: number | null;
+  unit: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+export type Photo = {
+  id: string;
+  kind: PhotoKind;
+  path: string;
+  takenAt: string;
+};
+
 export type WorkOrderDetail = WorkOrder & {
   manager: { id: string; name: string };
   timeEntries: TimeEntry[];
+  workLogs: WorkLog[];
+  photos: Photo[]
 };
 
 export type ActiveEntry = {

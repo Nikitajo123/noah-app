@@ -87,7 +87,7 @@ async function buildReport(userId: string, date?: string) {
     },
     include: {
       project: true,
-      materials: true,
+      materials: { orderBy: { name: "asc" } },
       timeEntries: { where: { userId, startedAt: day }, orderBy: { startedAt: "asc" } },
       workLogs: { where: { userId, createdAt: day }, orderBy: { createdAt: "asc" } },
       photos: { where: { userId, takenAt: day }, orderBy: { takenAt: "asc" } },

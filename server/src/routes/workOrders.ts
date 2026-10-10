@@ -9,7 +9,7 @@ workOrdersRouter.use(requireAuth);
 const listInclude = {
   project: true,
   worker: { select: { id: true, name: true } },
-  materials: true,
+  materials: { orderBy: { name: "asc" as const } },
 };
 
 const listQuery = z.object({
