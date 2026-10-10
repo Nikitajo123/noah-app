@@ -16,7 +16,7 @@ async function main() {
     update: {},
     create: { name: "Marko Kovač", email: "marko@noah.si", passwordHash: hash, role: "DELAVEC" },
   });
-  await prisma.user.upsert({
+  const luka = await prisma.user.upsert({
     where: { email: "luka@noah.si" },
     update: {},
     create: { name: "Luka Horvat", email: "luka@noah.si", passwordHash: hash, role: "DELAVEC" },
@@ -53,6 +53,44 @@ async function main() {
       },
     },
   });
+
+  const muller = projects.find((p) => p.name === "Hiša Müller")!;
+  const kovac = projects.find((p) => p.name === "Hiša Kovač")!;
+
+  await prisma.workOrder.upsert({
+    where: { number: "2026-00126" },
+    update: {},
+    create: {
+      number: "2026-00126",
+      projectId: muller.id,
+      workerId: luka.id,
+      managerId: vodja.id,
+      description: "Montaža strešne konstrukcije.",
+      plannedQty: 12,
+      plannedUnit: "kos",
+      plannedHours: 10,
+      dueDate: new Date(),
+      materials: { create: [{ name: "strešniki" }, { name: "letve" }, { name: "žeblji" }] },
+    },
+  });
+
+  await prisma.workOrder.upsert({
+    where: { number: "2026-00127" },
+    update: {},
+    create: {
+      number: "2026-00127",
+      projectId: kovac.id,
+      workerId: luka.id,
+      managerId: vodja.id,
+      description: "Montaža notranjih sten v pritličju.",
+      plannedQty: 6,
+      plannedUnit: "kos",
+      plannedHours: 6,
+      dueDate: new Date(),
+      materials: { create: [{ name: "mavčne plošče" }, { name: "profili" }] },
+    },
+  });
+
 }
 
 main().finally(() => prisma.$disconnect());

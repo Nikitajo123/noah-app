@@ -76,3 +76,14 @@ export type DailyReportData = {
   totalHours: number;
   orders: ReportOrder[];
 };
+
+export type OverviewRow = {
+  workOrderId: string;
+  number: string;
+  worker: { id: string; name: string };
+  project: Project;
+  arrival: string | null;
+  departure: string | null;
+  hours: number | null;
+  status: Status;
+};
