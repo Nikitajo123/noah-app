@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, downloadPdf } from "../api";
 import ReportView from "../components/ReportView";
 import { formatTime } from "../format";
 import type { DailyReportData } from "../types";
@@ -20,6 +20,10 @@ export default function Report() {
     mutationFn: () =>
       api("/reports/submit", { method: "POST", body: JSON.stringify({ date }) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["report", date] }),
+  });
+
+  const pdf = useMutation({
+    mutationFn: () => downloadPdf(`/reports/pdf?date=${date}`, `porocilo-${date}.pdf`),
   });
 
   const report = q.data;
@@ -64,6 +68,14 @@ export default function Report() {
                       ? "Oddaj ponovno"
                       : "Oddaj poročilo"}
                 </button>
+                <button
+                  className="btn-secondary"
+                  disabled={pdf.isPending}
+                  onClick={() => pdf.mutate()}
+                >
+                  {pdf.isPending ? "Pripravljam PDF..." : "Prenesi PDF"}
+                </button>
+                {pdf.error && <p className="error">{pdf.error.message}</p>}
               </div>
             )}
           </>

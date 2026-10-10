@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
+import { streamReportPdf } from "../pdf";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const hoursOf = (start: Date, end: Date) => (end.getTime() - start.getTime()) / 3600000;
@@ -66,7 +67,7 @@ overviewRouter.get("/", async (req, res) => {
 
 // ---------- Dnevno poročilo ----------
 
-async function buildReport(userId: string, date?: string) {
+export async function buildReport(userId: string, date?: string) {
   const { key, start, end, reportDate } = dayInfo(date);
   const day = { gte: start, lt: end };
 
@@ -157,6 +158,23 @@ reportsRouter.get("/", async (req, res) => {
   const report = await buildReport(userId, q.data.date);
   if (!report) return res.status(404).json({ error: "Delavca ni" });
   res.json(report);
+});
+
+reportsRouter.get("/pdf", async (req, res) => {
+  const q = reportQuery.safeParse(req.query);
+  if (!q.success) return res.status(400).json({ error: "Napačen filter" });
+
+  let userId = req.user!.id;
+  if (req.user!.role === "VODJA") {
+    if (!q.data.userId) return res.status(400).json({ error: "Manjka delavec" });
+    userId = q.data.userId;
+  }
+  const report = await buildReport(userId, q.data.date);
+  if (!report) return res.status(404).json({ error: "Delavca ni" });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="porocilo-${report.date}.pdf"`);
+  streamReportPdf(report, res);
 });
 
 reportsRouter.post("/submit", requireRole("DELAVEC"), async (req, res) => {

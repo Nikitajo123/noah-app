@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { api } from "../api";
+import { api, downloadPdf } from "../api";
 import StatusChip from "../components/StatusChip";
 import ReportView from "../components/ReportView";
 import { formatTime, plannedText } from "../format";
@@ -29,6 +29,11 @@ export default function ManagerOrder() {
     queryKey: ["report", workerId, date],
     enabled: !!workerId,
     queryFn: () => api<DailyReportData>(`/reports?userId=${workerId}&date=${date}`),
+  });
+
+  const pdf = useMutation({
+    mutationFn: () =>
+      downloadPdf(`/reports/pdf?userId=${workerId}&date=${date}`, `porocilo-${date}.pdf`),
   });
 
   if (orderQ.isLoading) return <div className="page">Nalaganje...</div>;
@@ -165,6 +170,16 @@ export default function ManagerOrder() {
               ? `Oddano ob ${formatTime(reportQ.data.submittedAt)}`
               : "Delavec poročila še ni oddal"}
           </p>
+          <div className="section">
+            <button
+              className="btn-secondary"
+              disabled={pdf.isPending}
+              onClick={() => pdf.mutate()}
+            >
+              {pdf.isPending ? "Pripravljam PDF..." : "Prenesi PDF"}
+            </button>
+            {pdf.error && <p className="error">{pdf.error.message}</p>}
+          </div>
           <ReportView report={reportQ.data} />
         </>
       )}
