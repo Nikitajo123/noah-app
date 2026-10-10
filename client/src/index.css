@@ -323,3 +323,39 @@ button:disabled { opacity: 0.6; cursor: default; }
   cursor: pointer;
 }
 .banner-problem strong { display: block; margin-bottom: 4px; color: var(--red); }
+
+.date-input {
+  margin-top: 14px;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--paper);
+  color: var(--ink);
+}
+.report-body { padding: 16px 0 0; }
+.submitted { margin: 0 20px 12px; font-size: 13px; font-weight: 600; color: var(--mute); }
+.submitted.ok { color: #1f8a4c; }
+
+.report-total {
+  margin: 0 20px 16px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-radius: 24px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.report-total small { color: #bdbbb4; font-size: 13px; }
+.report-total .num { font-size: 44px; font-weight: 700; color: var(--acc); line-height: 1.1; }
+
+.report-order { margin: 0 20px 16px; padding: 16px; border: 1.5px solid var(--line); border-radius: 18px; }
+.report-order-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.report-order h3 { margin: 0; font-size: 20px; }
+.kv { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.kv span { color: var(--mute); }
+.rsub { margin: 16px 0 6px; font-size: 13px; font-weight: 700; }
+.rline { margin: 0; padding: 3px 0; font-size: 14px; }

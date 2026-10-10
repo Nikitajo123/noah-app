@@ -28,3 +28,8 @@ export function plannedText(o: WorkOrder) {
     .filter(Boolean)
     .join(", ");
 }
+
+export function formatHours(h: number) {
+  const m = Math.round(h * 60);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+}

@@ -53,3 +53,26 @@ export type ActiveEntry = {
   endedAt: string | null;
   workOrder: { id: string; number: string; project: Project };
 } | null;
+
+export type ReportOrder = {
+  workOrderId: string;
+  number: string;
+  status: Status;
+  project: { name: string; location: string };
+  arrival: string | null;
+  departure: string | null;
+  hours: number;
+  logs: { description: string; quantity: number | null; unit: string | null; note: string | null }[];
+  materials: { name: string; usedQty: number | null }[];
+  problems: (string | null)[];
+  photos: Photo[];
+};
+
+export type DailyReportData = {
+  date: string;
+  worker: { id: string; name: string };
+  status: "OSNUTEK" | "ODDANO";
+  submittedAt: string | null;
+  totalHours: number;
+  orders: ReportOrder[];
+};

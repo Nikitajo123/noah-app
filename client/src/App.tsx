@@ -6,6 +6,7 @@ import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import Profile from "./pages/Profile";
 import Soon from "./pages/Soon";
+import Report from "./pages/Report";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -30,7 +31,10 @@ export default function App() {
           path="/nalog/:id"
           element={worker ? <OrderDetail /> : <Soon title="Podrobnosti naloga" />}
         />
-        <Route path="/porocilo" element={<Soon title="Dnevno poročilo" />} />
+        <Route
+          path="/porocilo"
+          element={worker ? <Report /> : <Soon title="Poročila" />}
+        />
         <Route path="/profil" element={<Profile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
