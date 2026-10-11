@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import VoiceButton from "./VoiceButton";
 
 export default function WorkLogForm({ orderId }: { orderId: string }) {
   const qc = useQueryClient();
@@ -44,6 +45,7 @@ export default function WorkLogForm({ orderId }: { orderId: string }) {
           placeholder="Montiranih 8 stenskih elementov."
         />
       </label>
+      <VoiceButton value={description} onChange={setDescription} />
       <div className="two">
         <label className="field">
           Količina
@@ -75,6 +77,7 @@ export default function WorkLogForm({ orderId }: { orderId: string }) {
           placeholder="Pri elementu št. 6 manjka pritrdilni material."
         />
       </label>
+      <VoiceButton value={note} onChange={setNote} />
       {save.error && <p className="error">{save.error.message}</p>}
       <button className="btn-primary" disabled={save.isPending || !description.trim()}>
         {save.isPending ? "Shranjujem..." : "Shrani vnos"}

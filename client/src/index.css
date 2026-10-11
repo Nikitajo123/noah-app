@@ -458,3 +458,23 @@ a.orow:hover { background: var(--fog); }
   .ocards { display: none; }
   .top, .filters, .kpis, .section, .list { max-width: 1100px; }
 }
+
+.voice-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: -4px 0 16px; }
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.voice-btn svg { color: var(--acc); }
+.voice-btn.on { background: var(--red); animation: pulse 1.2s infinite; }
+.voice-btn.on svg { color: var(--paper); }
+@keyframes pulse { 50% { opacity: 0.75; } }
