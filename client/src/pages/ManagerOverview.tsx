@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import { STATUS_LABEL, formatHours, formatTime } from "../format";
+import { EmptyState, Skeleton } from "../components/States";
+import { IconAlert, IconClock, IconWorkers } from "../components/Icons";
 import type { OverviewRow, Project, Status } from "../types";
 
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
@@ -68,51 +70,64 @@ export default function ManagerOverview() {
 
       <div className="kpis">
         <div className="kpi">
+          <span className="kpi-ic"><IconWorkers size={20} /></span>
           <small>Delavci na delu</small>
           <b>{working}</b>
         </div>
         <div className="kpi">
+          <span className="kpi-ic"><IconClock size={20} /></span>
           <small>Ure</small>
           <b>{formatHours(hours)}</b>
         </div>
         <div className={problems > 0 ? "kpi red" : "kpi"}>
+          <span className="kpi-ic"><IconAlert size={20} /></span>
           <small>Problemi</small>
           <b>{problems}</b>
         </div>
       </div>
 
-      {q.isLoading && <p className="muted section">Nalaganje...</p>}
-      {q.error && <p className="error section">{q.error.message}</p>}
-      {q.data && rows.length === 0 && <p className="muted section">Ni nalogov za ta dan.</p>}
-
-      <div className="otable">
-        <div className="orow head">
-          <span>Delavec</span>
-          <span>Objekt</span>
-          <span>Delovni nalog</span>
-          <span>Prihod</span>
-          <span>Odhod</span>
-          <span>Ure</span>
-          <span>Status</span>
+      {q.isLoading && (
+        <div className="section loading-pad">
+          <Skeleton rows={3} />
         </div>
-        {rows.map((r) => (
-          <Link key={r.workOrderId} to={link(r)} className="orow">
-            <b>{r.worker.name}</b>
-            <span>{r.project.name}</span>
-            <span>{r.number}</span>
-            <span>{arrival(r)}</span>
-            <span>{departure(r)}</span>
-            <span>{hoursText(r)}</span>
-            <StatusChip status={r.status} />
-          </Link>
-        ))}
-      </div>
+      )}
+      {q.error && (
+        <p className="error section loading-pad" role="alert">
+          {q.error.message}
+        </p>
+      )}
+      {q.data && rows.length === 0 && <EmptyState>Ni nalogov za ta dan.</EmptyState>}
+
+      {rows.length > 0 && (
+        <div className="otable">
+          <div className="orow head">
+            <span>Delavec</span>
+            <span>Objekt</span>
+            <span>Delovni nalog</span>
+            <span>Prihod</span>
+            <span>Odhod</span>
+            <span>Ure</span>
+            <span>Status</span>
+          </div>
+          {rows.map((r) => (
+            <Link key={r.workOrderId} to={link(r)} className="orow">
+              <b>{r.worker.name}</b>
+              <span>{r.project.name}</span>
+              <span>{r.number}</span>
+              <span>{arrival(r)}</span>
+              <span>{departure(r)}</span>
+              <b>{hoursText(r)}</b>
+              <StatusChip status={r.status} />
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="ocards">
         {rows.map((r) => (
           <Link key={r.workOrderId} to={link(r)} className="card" data-status={r.status}>
             <div className="card-top">
-              <b>{r.worker.name}</b>
+              <b className="card-who">{r.worker.name}</b>
               <StatusChip status={r.status} />
             </div>
             <h3>{r.project.name}</h3>
@@ -121,7 +136,7 @@ export default function ManagerOverview() {
               <span>
                 {arrival(r)} do {departure(r)}
               </span>
-              <b>{hoursText(r)}</b>
+              <b className="card-num">{hoursText(r)}</b>
             </div>
           </Link>
         ))}

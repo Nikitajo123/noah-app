@@ -3,6 +3,7 @@ import { api } from "../api";
 import { formatTime } from "../format";
 import { compressImage } from "../image";
 import PhotoImg from "./PhotoImg";
+import { IconCamera } from "./Icons";
 import type { Photo, PhotoKind } from "../types";
 
 const KINDS: { kind: PhotoKind; label: string }[] = [
@@ -39,17 +40,17 @@ export default function PhotoSection({
   const anyAllowed = KINDS.some((k) => allowed[k.kind]);
 
   return (
-    <div className="section">
-      <h3>Fotografije</h3>
+    <div className="section panel">
+      <h3 className="panel-title">
+        <span className="pt-ic"><IconCamera size={18} /></span>
+        Fotografije
+      </h3>
       {anyAllowed && (
         <>
           <div className="tiles">
             {KINDS.map(({ kind, label }) => (
               <label key={kind} className={allowed[kind] ? "tile" : "tile off"}>
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="24" height="17" rx="4" />
-                  <circle cx="14" cy="15" r="4.5" />
-                </svg>
+                <IconCamera size={26} />
                 {label}
                 <input
                   type="file"
@@ -70,7 +71,12 @@ export default function PhotoSection({
           </p>
         </>
       )}
-      {upload.isPending && <p className="muted">Nalagam fotografijo...</p>}
+      {upload.isPending && (
+        <p className="muted uploading" role="status">
+          <span className="spinner sm" aria-hidden="true" />
+          Nalagam fotografijo...
+        </p>
+      )}
       {upload.error && <p className="error">{upload.error.message}</p>}
       {photos.length > 0 && (
         <div className="thumbs">

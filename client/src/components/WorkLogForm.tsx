@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import VoiceButton from "./VoiceButton";
+import { IconEdit } from "./Icons";
 
 export default function WorkLogForm({ orderId }: { orderId: string }) {
   const qc = useQueryClient();
@@ -35,8 +36,11 @@ export default function WorkLogForm({ orderId }: { orderId: string }) {
   }
 
   return (
-    <form className="section" onSubmit={submit}>
-      <h3>Opravljeno delo</h3>
+    <form className="section panel" onSubmit={submit}>
+      <h3 className="panel-title">
+        <span className="pt-ic"><IconEdit size={18} /></span>
+        Opravljeno delo
+      </h3>
       <label className="field">
         Kaj je bilo narejeno
         <textarea

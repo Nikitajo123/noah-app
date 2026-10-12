@@ -11,10 +11,11 @@ import ManagerOverview from "./pages/ManagerOverview";
 import ManagerOrder from "./pages/ManagerOrder";
 import ProjectsList from "./pages/ProjectsList";
 import Admin from "./pages/Admin";
+import { Spinner } from "./components/States";
 
 export default function App() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="page center">Nalaganje...</div>;
+  if (loading) return <Spinner />;
 
   if (!user) {
     return (

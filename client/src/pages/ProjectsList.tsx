@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import type { Project, WorkOrder } from "../types";
+import { Skeleton } from "../components/States";
 
 export default function ProjectsList() {
   const projects = useQuery({
@@ -21,8 +22,8 @@ export default function ProjectsList() {
         <p>Objekti in delovni nalogi</p>
       </header>
       <div className="list">
-        {(projects.isLoading || orders.isLoading) && <p className="muted">Nalaganje...</p>}
-        {projects.error && <p className="error">{projects.error.message}</p>}
+        {(projects.isLoading || orders.isLoading) && <Skeleton rows={3} />}
+        {projects.error && <p className="error" role="alert">{projects.error.message}</p>}
         {projects.data?.map((p) => {
           const list = (orders.data ?? []).filter((o) => o.project.id === p.id);
           return (
@@ -30,7 +31,7 @@ export default function ProjectsList() {
               <p className="group-title">
                 {p.name}, {p.location} ({list.length})
               </p>
-              {list.length === 0 && <p className="muted">Ni nalogov.</p>}
+              {list.length === 0 && <p className="muted group-empty">Ni nalogov.</p>}
               {list.map((o) => (
                 <Link key={o.id} to={`/nalog/${o.id}`} className="card" data-status={o.status}>
                   <div className="card-top">

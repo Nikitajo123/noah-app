@@ -1,5 +1,7 @@
 import StatusChip from "./StatusChip";
 import PhotoImg from "./PhotoImg";
+import { EmptyState } from "./States";
+import { IconReport } from "./Icons";
 import { formatHours, formatTime } from "../format";
 import type { DailyReportData, PhotoKind } from "../types";
 
@@ -12,7 +14,7 @@ const KIND_LABEL: Record<PhotoKind, string> = {
 
 export default function ReportView({ report }: { report: DailyReportData }) {
   if (report.orders.length === 0) {
-    return <p className="muted section">Za ta dan ni vnosov.</p>;
+    return <EmptyState icon={<IconReport size={28} />}>Za ta dan ni vnosov.</EmptyState>;
   }
 
   return (

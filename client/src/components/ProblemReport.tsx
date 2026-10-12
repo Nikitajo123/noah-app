@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { compressImage } from "../image";
+import { IconAlert, IconCamera, IconCheck } from "./Icons";
 
 export default function ProblemReport({ orderId }: { orderId: string }) {
   const qc = useQueryClient();
@@ -49,6 +50,7 @@ export default function ProblemReport({ orderId }: { orderId: string }) {
   if (!open) {
     return (
       <button className="btn-danger" onClick={() => setOpen(true)}>
+        <IconAlert size={20} />
         Prijavi težavo
       </button>
     );
@@ -66,11 +68,8 @@ export default function ProblemReport({ orderId }: { orderId: string }) {
           autoFocus
         />
       </label>
-      <label className="tile wide">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="7" width="24" height="17" rx="4" />
-          <circle cx="14" cy="15" r="4.5" />
-        </svg>
+      <label className={file ? "tile wide added" : "tile wide"}>
+        {file ? <IconCheck size={26} /> : <IconCamera size={26} />}
         {file ? "Fotografija dodana" : "Dodaj fotografijo problema"}
         <input
           type="file"

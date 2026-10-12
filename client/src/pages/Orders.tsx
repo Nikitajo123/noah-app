@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import { formatDue, plannedText } from "../format";
+import { EmptyState, Skeleton } from "../components/States";
+import { IconClock } from "../components/Icons";
 import type { WorkOrder } from "../types";
 
 export default function Orders() {
@@ -39,17 +41,17 @@ export default function Orders() {
         <p>{today}</p>
       </header>
       <div className="seg">
-        <button className={tab === "open" ? "on" : ""} onClick={() => setTab("open")}>
+        <button className={tab === "open" ? "on" : ""} aria-pressed={tab === "open"} onClick={() => setTab("open")}>
           Odprti
         </button>
-        <button className={tab === "done" ? "on" : ""} onClick={() => setTab("done")}>
+        <button className={tab === "done" ? "on" : ""} aria-pressed={tab === "done"} onClick={() => setTab("done")}>
           Zaključeni
         </button>
       </div>
       <div className="list">
-        {isLoading && <p className="muted">Nalaganje...</p>}
-        {error && <p className="error">{error.message}</p>}
-        {data && data.length === 0 && <p className="muted">Ni nalogov.</p>}
+        {isLoading && <Skeleton rows={3} />}
+        {error && <p className="error" role="alert">{error.message}</p>}
+        {data && data.length === 0 && <EmptyState>Ni nalogov.</EmptyState>}
         {[...groups.entries()].map(([pid, g]) => (
           <section key={pid} className="group">
             <p className="group-title">
@@ -64,7 +66,10 @@ export default function Orders() {
                 <h3>{o.project.name}</h3>
                 <p>{o.description}</p>
                 <div className="card-bottom">
-                  <span>{plannedText(o)}</span>
+                  <span className="cb-plan">
+                    {plannedText(o) && <IconClock size={16} />}
+                    {plannedText(o)}
+                  </span>
                   <b>Rok: {formatDue(o.dueDate)}</b>
                 </div>
               </Link>

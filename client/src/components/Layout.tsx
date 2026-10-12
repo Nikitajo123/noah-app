@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { IconReport, IconTasks, IconUser } from "./Icons";
 
 const tabClass = ({ isActive }: { isActive: boolean }) => (isActive ? "tab active" : "tab");
 
@@ -10,15 +11,15 @@ export default function Layout() {
       </main>
       <nav className="tabs">
         <NavLink to="/" end className={tabClass}>
-          <i />
+          <span className="ic"><IconTasks /></span>
           Nalogi
         </NavLink>
         <NavLink to="/porocilo" className={tabClass}>
-          <i />
+          <span className="ic"><IconReport /></span>
           Poročilo
         </NavLink>
         <NavLink to="/profil" className={tabClass}>
-          <i />
+          <span className="ic"><IconUser /></span>
           Profil
         </NavLink>
       </nav>

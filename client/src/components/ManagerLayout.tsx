@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { IconManage, IconOverview, IconProjects, IconUser } from "./Icons";
 
 const cls = ({ isActive }: { isActive: boolean }) => (isActive ? "mtab active" : "mtab");
 
@@ -6,22 +7,25 @@ export default function ManagerLayout() {
   return (
     <div className="mshell">
       <aside className="mside">
-        <div className="mlogo">NOAH</div>
+        <div className="mlogo">
+          <span className="mark" aria-hidden="true" />
+          NOAH
+        </div>
         <nav>
           <NavLink to="/" end className={cls}>
-            <i />
+            <span className="ic"><IconOverview /></span>
             Pregled
           </NavLink>
           <NavLink to="/projekti" className={cls}>
-            <i />
+            <span className="ic"><IconProjects /></span>
             Projekti
           </NavLink>
           <NavLink to="/upravljanje" className={cls}>
-            <i />
+            <span className="ic"><IconManage /></span>
             Upravljanje
           </NavLink>
           <NavLink to="/profil" className={cls}>
-            <i />
+            <span className="ic"><IconUser /></span>
             Profil
           </NavLink>
         </nav>

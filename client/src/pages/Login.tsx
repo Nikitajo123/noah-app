@@ -24,8 +24,20 @@ export default function Login() {
   return (
     <div className="login">
       <div className="login-hero">
-        <div className="bar" />
+        <div className="hero-deco" aria-hidden="true" />
+        <div className="logo-mark" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <path
+              d="M7 23V7l16 16V7"
+              stroke="currentColor"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
         <h1>NOAH</h1>
+        <div className="bar" />
         <p className="hero-title">Delovni nalogi</p>
         <p className="hero-sub">Delo na gradbišču, na enem mestu.</p>
       </div>
@@ -51,8 +63,12 @@ export default function Login() {
             required
           />
         </label>
-        {error && <p className="error">{error}</p>}
-        <button className="btn-primary" disabled={busy}>
+        {error && (
+          <p className="error form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <button className="btn-primary btn-lg" disabled={busy}>
           {busy ? "Prijavljam..." : "Prijava"}
         </button>
         <p className="muted center">Težave s prijavo? Pokliči vodjo.</p>

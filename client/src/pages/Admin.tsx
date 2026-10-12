@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import type { Project, WorkOrder } from "../types";
+import { EmptyState, Skeleton } from "../components/States";
+import { IconCheck } from "../components/Icons";
 
 type Tab = "order" | "orders" | "project" | "user";
 type Worker = { id: string; name: string };
@@ -62,7 +64,12 @@ function OrderForm() {
 
   return (
     <form onSubmit={submit}>
-      {done && <div className="okmsg">{done}</div>}
+      {done && (
+        <div className="okmsg" role="status">
+          <IconCheck size={18} />
+          {done}
+        </div>
+      )}
       <label className="field">
         Projekt
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
@@ -165,8 +172,8 @@ function OrdersList() {
 
   return (
     <div>
-      {q.isLoading && <p className="muted">Nalaganje...</p>}
-      {q.data?.length === 0 && <p className="muted">Ni nalogov.</p>}
+      {q.isLoading && <Skeleton rows={3} variant="line" />}
+      {q.data?.length === 0 && <EmptyState>Ni nalogov.</EmptyState>}
       {del.error && <p className="error">{del.error.message}</p>}
       {q.data?.map((o) => (
         <div key={o.id} className="arow">
@@ -227,7 +234,12 @@ function ProjectForm() {
 
   return (
     <form onSubmit={submit}>
-      {done && <div className="okmsg">{done}</div>}
+      {done && (
+        <div className="okmsg" role="status">
+          <IconCheck size={18} />
+          {done}
+        </div>
+      )}
       <label className="field">
         Ime projekta
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Hiša Horvat" />
@@ -278,7 +290,12 @@ function UserForm() {
   return (
     <>
       <form onSubmit={submit}>
-        {done && <div className="okmsg">{done}</div>}
+        {done && (
+          <div className="okmsg" role="status">
+            <IconCheck size={18} />
+            {done}
+          </div>
+        )}
         <label className="field">
           Ime in priimek
           <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -343,7 +360,12 @@ export default function Admin() {
       </header>
       <div className="seg four">
         {tabs.map((t) => (
-          <button key={t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
+          <button
+            key={t.id}
+            className={tab === t.id ? "on" : ""}
+            aria-pressed={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
             {t.label}
           </button>
         ))}

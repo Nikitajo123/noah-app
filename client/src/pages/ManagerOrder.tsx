@@ -4,6 +4,19 @@ import { api, downloadPdf } from "../api";
 import StatusChip from "../components/StatusChip";
 import ReportView from "../components/ReportView";
 import PhotoImg from "../components/PhotoImg";
+import StatusSteps from "../components/StatusSteps";
+import { Skeleton } from "../components/States";
+import {
+  IconAlert,
+  IconBack,
+  IconBox,
+  IconCamera,
+  IconCheck,
+  IconClock,
+  IconDownload,
+  IconEdit,
+  IconHistory,
+} from "../components/Icons";
 import { formatTime, plannedText } from "../format";
 import type { DailyReportData, PhotoKind, WorkOrderDetail } from "../types";
 
@@ -37,7 +50,13 @@ export default function ManagerOrder() {
       downloadPdf(`/reports/pdf?userId=${workerId}&date=${date}`, `porocilo-${date}.pdf`),
   });
 
-  if (orderQ.isLoading) return <div className="page">Nalaganje...</div>;
+  if (orderQ.isLoading) {
+    return (
+      <div className="page">
+        <Skeleton rows={3} />
+      </div>
+    );
+  }
   if (orderQ.error || !orderQ.data) {
     return <div className="page error">{orderQ.error?.message ?? "Naloge ni"}</div>;
   }
@@ -58,17 +77,22 @@ export default function ManagerOrder() {
   return (
     <div className="mdetail">
       <div className="detail-top">
-        <Link to="/" className="back">
-          ‹
+        <Link to="/" className="back" aria-label="Nazaj">
+          <IconBack />
         </Link>
         <h1>Nalog {o.number}</h1>
         <StatusChip status={o.status} />
       </div>
 
+      <StatusSteps status={o.status} />
+
       {o.status === "PROBLEM" && (
-        <div className="banner-problem">
-          <strong>Delavec je prijavil težavo.</strong>
-          {lastNote && <div>{lastNote}</div>}
+        <div className="banner-problem" role="alert">
+          <IconAlert />
+          <div>
+            <strong>Delavec je prijavil težavo.</strong>
+            {lastNote && <div>{lastNote}</div>}
+          </div>
         </div>
       )}
 
@@ -77,16 +101,21 @@ export default function ManagerOrder() {
         <p className="muted">
           {o.project.location}, delavec {o.worker.name}
         </p>
-        <p>{o.description}</p>
+        <p className="desc">{o.description}</p>
       </div>
 
-      <div className="section info">
-        <small>Planirano</small>
-        <strong>{plannedText(o) || "Ni podatka"}</strong>
+      <div className="info-grid">
+        <div className="info">
+          <small>Planirano</small>
+          <strong>{plannedText(o) || "Ni podatka"}</strong>
+        </div>
       </div>
 
-      <div className="entries">
-        <h3>Evidenca ur</h3>
+      <div className="section panel">
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconClock size={18} /></span>
+          Evidenca ur
+        </h3>
         {o.timeEntries.length === 0 && <p className="muted">Delo še ni začeto.</p>}
         {o.timeEntries.map((e) => (
           <div key={e.id} className="entry-row">
@@ -98,15 +127,18 @@ export default function ManagerOrder() {
           </div>
         ))}
         {o.timeEntries.length > 0 && (
-          <div className="entry-row">
+          <div className="entry-row total">
             <span>Skupaj</span>
             <b>{total.toFixed(2)} h</b>
           </div>
         )}
       </div>
 
-      <div className="section">
-        <h3>Kaj je bilo narejeno</h3>
+      <div className="section panel">
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconHistory size={18} /></span>
+          Kaj je bilo narejeno
+        </h3>
         {o.workLogs.length === 0 && <p className="muted">Ni vnosov.</p>}
         <div className="logs">
           {o.workLogs.map((l) => {
@@ -134,8 +166,11 @@ export default function ManagerOrder() {
         </div>
       </div>
 
-      <div className="section">
-        <h3>Material</h3>
+      <div className="section panel">
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconBox size={18} /></span>
+          Material
+        </h3>
         {o.materials.map((m) => (
           <div key={m.id} className="kv">
             <span>{m.name}</span>
@@ -144,8 +179,11 @@ export default function ManagerOrder() {
         ))}
       </div>
 
-      <div className="section">
-        <h3>Fotografije</h3>
+      <div className="section panel">
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconCamera size={18} /></span>
+          Fotografije
+        </h3>
         {o.photos.length === 0 && <p className="muted">Ni fotografij.</p>}
         <div className="thumbs">
           {o.photos.map((p) => (
@@ -160,11 +198,16 @@ export default function ManagerOrder() {
       </div>
 
       <h2 className="rep-title">Dnevno poročilo, {dateText}</h2>
-      {reportQ.isLoading && <p className="muted section">Nalaganje...</p>}
+      {reportQ.isLoading && (
+        <div className="section">
+          <Skeleton rows={1} />
+        </div>
+      )}
       {reportQ.error && <p className="error section">{reportQ.error.message}</p>}
       {reportQ.data && (
         <>
           <p className={reportQ.data.status === "ODDANO" ? "submitted ok" : "submitted"}>
+            {reportQ.data.status === "ODDANO" ? <IconCheck size={16} /> : <IconEdit size={16} />}
             {reportQ.data.status === "ODDANO" && reportQ.data.submittedAt
               ? `Oddano ob ${formatTime(reportQ.data.submittedAt)}`
               : "Delavec poročila še ni oddal"}
@@ -175,6 +218,7 @@ export default function ManagerOrder() {
               disabled={pdf.isPending}
               onClick={() => pdf.mutate()}
             >
+              <IconDownload size={20} />
               {pdf.isPending ? "Pripravljam PDF..." : "Prenesi PDF"}
             </button>
             {pdf.error && <p className="error">{pdf.error.message}</p>}
