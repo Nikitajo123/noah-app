@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import fs from "fs";
 import { authRouter } from "./routes/auth";
 import { projectsRouter, workersRouter } from "./routes/projects";
 import { workOrdersRouter } from "./routes/workOrders";
@@ -17,17 +19,29 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.use("/auth", authRouter);
-app.use("/projects", projectsRouter);
-app.use("/workers", workersRouter);
-app.use("/work-orders", workOrdersRouter);
-app.use("/time", timeRouter);
-app.use("/logs", logsRouter);
-app.use("/materials", materialsRouter);
-app.use("/photos", photosRouter);
-app.use("/overview", overviewRouter);
-app.use("/reports", reportsRouter);
+const api = express.Router();
+api.use("/auth", authRouter);
+api.use("/projects", projectsRouter);
+api.use("/workers", workersRouter);
+api.use("/work-orders", workOrdersRouter);
+api.use("/time", timeRouter);
+api.use("/logs", logsRouter);
+api.use("/materials", materialsRouter);
+api.use("/photos", photosRouter);
+api.use("/overview", overviewRouter);
+api.use("/reports", reportsRouter);
+app.use("/api", api);
 
-app.listen(3000, () => {
-  console.log("Server on http://localhost:3000");
+const clientDist = path.resolve(__dirname, "../../client/dist");
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api/")) return next();
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
+
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, () => {
+  console.log(`Server on http://localhost:${port}`);
 });

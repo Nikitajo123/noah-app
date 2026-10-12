@@ -51,7 +51,7 @@ photosRouter.post("/", requireRole("DELAVEC"), upload.single("photo"), async (re
       kind,
       path: `/photos/${photoId}/file`,
       takenAt: takenAt ?? new Date(),
-      file: { create: { mimeType: file.mimetype, data: file.buffer } },
+      file: { create: { mimeType: file.mimetype, data: new Uint8Array(file.buffer) } },
     },
   });
   res.status(201).json(photo);

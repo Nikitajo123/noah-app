@@ -3,12 +3,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 const proxy = {
-  "/api": {
-    target: "http://localhost:3000",
-    changeOrigin: true,
-    rewrite: (p: string) => p.replace(/^\/api/, ""),
-  },
-  "/uploads": "http://localhost:3000",
+  "/api": { target: "http://localhost:3000", changeOrigin: true },
 };
 
 export default defineConfig({
@@ -35,7 +30,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        navigateFallbackDenylist: [/^\/api/, /^\/uploads/],
+        navigateFallbackDenylist: [/^\/api/],
         globPatterns: ["**/*.{js,css,html,svg,png}"],
       },
     }),
