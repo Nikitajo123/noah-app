@@ -16,6 +16,10 @@ export default function ManagerLayout() {
             <i />
             Projekti
           </NavLink>
+          <NavLink to="/upravljanje" className={cls}>
+            <i />
+            Upravljanje
+          </NavLink>
           <NavLink to="/profil" className={cls}>
             <i />
             Profil

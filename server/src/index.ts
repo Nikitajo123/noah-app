@@ -10,6 +10,7 @@ import { timeRouter } from "./routes/time";
 import { logsRouter, materialsRouter } from "./routes/logs";
 import { photosRouter } from "./routes/photos";
 import { overviewRouter, reportsRouter } from "./routes/reports";
+import { usersRouter } from "./routes/admin";
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ const api = express.Router();
 api.use("/auth", authRouter);
 api.use("/projects", projectsRouter);
 api.use("/workers", workersRouter);
+api.use("/users", usersRouter);
 api.use("/work-orders", workOrdersRouter);
 api.use("/time", timeRouter);
 api.use("/logs", logsRouter);

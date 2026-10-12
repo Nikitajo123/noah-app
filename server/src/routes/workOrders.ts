@@ -62,7 +62,7 @@ workOrdersRouter.get("/:id", async (req, res) => {
 });
 
 const createSchema = z.object({
-  number: z.string().min(1),
+  number: z.string().min(1).optional(),
   projectId: z.string().uuid(),
   workerId: z.string().uuid(),
   description: z.string().min(1),
@@ -73,25 +73,59 @@ const createSchema = z.object({
   materials: z.array(z.string()).default([]),
 });
 
+async function nextNumber() {
+  const year = new Date().getFullYear();
+  const last = await prisma.workOrder.findFirst({
+    where: { number: { startsWith: `${year}-` } },
+    orderBy: { number: "desc" },
+  });
+  const n = last ? parseInt(last.number.split("-")[1], 10) + 1 : 1;
+  return `${year}-${String(n).padStart(5, "0")}`;
+}
+
 workOrdersRouter.post("/", requireRole("VODJA"), async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Napačni podatki", details: parsed.error.issues });
   }
-  const { materials, ...data } = parsed.data;
-  try {
-    const order = await prisma.workOrder.create({
-      data: {
-        ...data,
-        managerId: req.user!.id,
-        materials: { create: materials.map((name) => ({ name })) },
-      },
-      include: listInclude,
-    });
-    res.status(201).json(order);
-  } catch {
-    res.status(409).json({ error: "Številka naloga že obstaja ali podatki niso veljavni" });
+  const { materials, number, ...data } = parsed.data;
+
+  const worker = await prisma.user.findUnique({ where: { id: data.workerId } });
+  if (!worker || worker.role !== "DELAVEC") {
+    return res.status(400).json({ error: "Izberi delavca" });
   }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const order = await prisma.workOrder.create({
+        data: {
+          ...data,
+          number: number ?? (await nextNumber()),
+          managerId: req.user!.id,
+          materials: { create: materials.map((name) => ({ name })) },
+        },
+        include: listInclude,
+      });
+      return res.status(201).json(order);
+    } catch {
+      if (number) break;
+    }
+  }
+  res.status(409).json({ error: "Naloga ni bilo mogoče ustvariti. Preveri podatke." });
+});
+
+workOrdersRouter.delete("/:id", requireRole("VODJA"), async (req, res) => {
+  const id = req.params.id as string;
+  const order = await prisma.workOrder.findUnique({ where: { id } });
+  if (!order) return res.status(404).json({ error: "Naloga ni" });
+  await prisma.$transaction([
+    prisma.material.deleteMany({ where: { workOrderId: id } }),
+    prisma.timeEntry.deleteMany({ where: { workOrderId: id } }),
+    prisma.workLog.deleteMany({ where: { workOrderId: id } }),
+    prisma.photo.deleteMany({ where: { workOrderId: id } }),
+    prisma.workOrder.delete({ where: { id } }),
+  ]);
+  res.json({ ok: true });
 });
 
 const transitions: Record<string, string[]> = {

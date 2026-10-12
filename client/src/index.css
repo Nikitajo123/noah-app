@@ -481,3 +481,40 @@ a.orow:hover { background: var(--fog); }
 
 .ph-placeholder { aspect-ratio: 1; border-radius: 14px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--mute); }
 .thumb a { display: block; }
+
+.top p { text-transform: none; }
+.top p::first-letter { text-transform: uppercase; }
+
+.seg.four button { font-size: 13px; padding: 0 4px; }
+.admin { padding: 20px; max-width: 640px; }
+.admin h3 { margin: 24px 0 8px; font-size: 17px; }
+.okmsg {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #e8f5ec;
+  color: #1f6b3e;
+  font-size: 14px;
+  font-weight: 600;
+}
+.arow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.arow > div:first-child { flex: 1; min-width: 0; }
+.btn-mini {
+  height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid var(--red);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

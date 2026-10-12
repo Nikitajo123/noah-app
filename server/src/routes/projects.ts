@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 
@@ -11,6 +12,18 @@ projectsRouter.get("/", async (_req, res) => {
     orderBy: { name: "asc" },
   });
   res.json(projects);
+});
+
+const projectSchema = z.object({
+  name: z.string().trim().min(1),
+  location: z.string().trim().min(1),
+});
+
+projectsRouter.post("/", requireRole("VODJA"), async (req, res) => {
+  const parsed = projectSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Vnesi ime in lokacijo" });
+  const project = await prisma.project.create({ data: parsed.data });
+  res.status(201).json(project);
 });
 
 export const workersRouter = Router();

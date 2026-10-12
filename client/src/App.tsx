@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import ManagerOverview from "./pages/ManagerOverview";
 import ManagerOrder from "./pages/ManagerOrder";
 import ProjectsList from "./pages/ProjectsList";
+import Admin from "./pages/Admin";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/" element={<ManagerOverview />} />
           <Route path="/nalog/:id" element={<ManagerOrder />} />
           <Route path="/projekti" element={<ProjectsList />} />
+          <Route path="/upravljanje" element={<Admin />} />
           <Route path="/profil" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
