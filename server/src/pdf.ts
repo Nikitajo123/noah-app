@@ -1,6 +1,5 @@
 import PDFDocument from "pdfkit";
 import path from "path";
-import fs from "fs";
 
 export type PdfReport = {
   date: string;
@@ -18,7 +17,7 @@ export type PdfReport = {
     logs: { description: string; quantity: number | null; unit: string | null; note: string | null }[];
     materials: { name: string; usedQty: number | null }[];
     problems: (string | null)[];
-    photos: { kind: string; path: string; takenAt: Date }[];
+    photos: { id: string; kind: string; path: string; takenAt: Date }[];
   }[];
 };
 
@@ -57,7 +56,11 @@ const M = 40;
 const W = 515;
 const BOTTOM = 790;
 
-export function streamReportPdf(report: PdfReport, out: NodeJS.WritableStream) {
+export function streamReportPdf(
+  report: PdfReport,
+  out: NodeJS.WritableStream,
+  photoData: Map<string, Buffer> = new Map()
+) {
   const doc = new PDFDocument({ size: "A4", margin: M, bufferPages: true });
   doc.registerFont("R", path.join(fontDir, "Inter-Regular.woff"));
   doc.registerFont("B", path.join(fontDir, "Inter-Bold.woff"));
@@ -198,11 +201,11 @@ export function streamReportPdf(report: PdfReport, out: NodeJS.WritableStream) {
         if (col === 0) ensure(ch + 30);
         const x = M + col * (cw + gap);
         const y = doc.y;
-        const file = path.join(process.cwd(), p.path);
         doc.roundedRect(x, y, cw, ch, 6).fill(FOG);
         try {
-          if (!fs.existsSync(file)) throw new Error("missing");
-          doc.image(file, x + 4, y + 4, { fit: [cw - 8, ch - 8], align: "center", valign: "center" });
+          const data = photoData.get(p.id);
+          if (!data) throw new Error("missing");
+          doc.image(data, x + 4, y + 4, { fit: [cw - 8, ch - 8], align: "center", valign: "center" });
         } catch {
           doc.font("R").fontSize(9).fillColor(MUTE);
           text("Fotografije ni mogoče prikazati", x + 8, y + ch / 2 - 5, { width: cw - 16, align: "center" });

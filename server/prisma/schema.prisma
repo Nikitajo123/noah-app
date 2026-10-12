@@ -113,6 +113,7 @@ model Photo {
   kind        PhotoKind
   path        String
   takenAt     DateTime
+  file        PhotoFile?
 }
 
 model DailyReport {
@@ -124,4 +125,11 @@ model DailyReport {
   submittedAt DateTime?
 
   @@unique([userId, date])
+}
+
+model PhotoFile {
+  photoId  String @id
+  photo    Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  mimeType String
+  data     Bytes
 }

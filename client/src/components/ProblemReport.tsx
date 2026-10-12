@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { compressImage } from "../image";
 
 export default function ProblemReport({ orderId }: { orderId: string }) {
   const qc = useQueryClient();
@@ -26,7 +27,7 @@ export default function ProblemReport({ orderId }: { orderId: string }) {
         fd.append("workOrderId", orderId);
         fd.append("kind", "PROBLEM");
         fd.append("takenAt", new Date().toISOString());
-        fd.append("photo", file);
+        fd.append("photo", await compressImage(file));
         await api("/photos", { method: "POST", body: fd });
       }
       await api(`/work-orders/${orderId}/status`, {

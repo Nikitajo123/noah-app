@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, downloadPdf } from "../api";
 import StatusChip from "../components/StatusChip";
 import ReportView from "../components/ReportView";
+import PhotoImg from "../components/PhotoImg";
 import { formatTime, plannedText } from "../format";
 import type { DailyReportData, PhotoKind, WorkOrderDetail } from "../types";
 
@@ -149,9 +150,7 @@ export default function ManagerOrder() {
         <div className="thumbs">
           {o.photos.map((p) => (
             <div key={p.id} className="thumb">
-              <a href={p.path} target="_blank" rel="noreferrer">
-                <img src={p.path} alt={KIND_LABEL[p.kind]} />
-              </a>
+              <PhotoImg path={p.path} alt={KIND_LABEL[p.kind]} />
               <small>
                 {KIND_LABEL[p.kind]}, {formatTime(p.takenAt)}
               </small>

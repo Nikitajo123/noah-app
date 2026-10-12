@@ -125,7 +125,16 @@ workOrdersRouter.patch("/:id/status", requireRole("DELAVEC"), async (req, res) =
     if (running) {
       return res.status(400).json({ error: "Najprej končaj delo" });
     }
+    const worked = await prisma.timeEntry.count({
+      where: { workOrderId: id, endedAt: { not: null } },
+    });
+    if (worked === 0) {
+      return res
+        .status(400)
+        .json({ error: "Najprej evidentiraj delo (Začni delo in Končaj delo)" });
+    }
   }
+
   const updated = await prisma.workOrder.update({
     where: { id },
     data: { status: parsed.data.status },

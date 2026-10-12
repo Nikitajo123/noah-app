@@ -1,4 +1,5 @@
 import StatusChip from "./StatusChip";
+import PhotoImg from "./PhotoImg";
 import { formatHours, formatTime } from "../format";
 import type { DailyReportData, PhotoKind } from "../types";
 
@@ -92,7 +93,7 @@ export default function ReportView({ report }: { report: DailyReportData }) {
                 <div className="thumbs">
                   {o.photos.map((p) => (
                     <div key={p.id} className="thumb">
-                      <img src={p.path} alt={KIND_LABEL[p.kind]} />
+                      <PhotoImg path={p.path} alt={KIND_LABEL[p.kind]} />
                       <small>
                         {KIND_LABEL[p.kind]}, {formatTime(p.takenAt)}
                       </small>

@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { formatTime } from "../format";
+import { compressImage } from "../image";
+import PhotoImg from "./PhotoImg";
 import type { Photo, PhotoKind } from "../types";
 
 const KINDS: { kind: PhotoKind; label: string }[] = [
@@ -21,12 +23,13 @@ export default function PhotoSection({
 }) {
   const qc = useQueryClient();
   const upload = useMutation({
-    mutationFn: ({ kind, file }: { kind: PhotoKind; file: File }) => {
+    mutationFn: async ({ kind, file }: { kind: PhotoKind; file: File }) => {
+      const small = await compressImage(file);
       const fd = new FormData();
       fd.append("workOrderId", orderId);
       fd.append("kind", kind);
       fd.append("takenAt", new Date().toISOString());
-      fd.append("photo", file);
+      fd.append("photo", small);
       return api("/photos", { method: "POST", body: fd });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["order", orderId] }),
@@ -73,7 +76,7 @@ export default function PhotoSection({
         <div className="thumbs">
           {photos.map((p) => (
             <div key={p.id} className="thumb">
-              <img src={p.path} alt={label(p.kind)} />
+              <PhotoImg path={p.path} alt={label(p.kind)} />
               <small>
                 {label(p.kind)}, {formatTime(p.takenAt)}
               </small>

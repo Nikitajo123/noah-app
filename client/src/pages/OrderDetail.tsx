@@ -226,12 +226,15 @@ export default function OrderDetail() {
           )}
           <button
             className="btn-primary"
-            disabled={setStatus.isPending || !!running}
+            disabled={setStatus.isPending || !!running || !hasFinishedWork}
             onClick={() => setStatus.mutate("ZAKLJUCEN")}
           >
             Zaključi delovni nalog
           </button>
           {running && <p className="muted">Najprej končaj delo.</p>}
+          {!running && !hasFinishedWork && (
+            <p className="muted">Najprej začni in končaj delo, da se zapišejo ure.</p>
+          )}
         </div>
       )}
 

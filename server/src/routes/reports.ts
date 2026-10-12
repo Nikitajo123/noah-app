@@ -174,7 +174,10 @@ reportsRouter.get("/pdf", async (req, res) => {
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `attachment; filename="porocilo-${report.date}.pdf"`);
-  streamReportPdf(report, res);
+  const ids = report.orders.flatMap((o) => o.photos.map((p) => p.id));
+  const files = await prisma.photoFile.findMany({ where: { photoId: { in: ids } } });
+  const photoData = new Map(files.map((f) => [f.photoId, Buffer.from(f.data)]));
+  streamReportPdf(report, res, photoData);
 });
 
 reportsRouter.post("/submit", requireRole("DELAVEC"), async (req, res) => {

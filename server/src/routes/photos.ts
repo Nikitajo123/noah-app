@@ -1,29 +1,18 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 
-export const uploadDir = path.join(process.cwd(), "uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (_req, file, cb) =>
-    cb(null, randomUUID() + path.extname(file.originalname).toLowerCase()),
-});
-
 const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith("image/")),
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, ["image/jpeg", "image/png"].includes(file.mimetype)),
 });
 
 export const photosRouter = Router();
-photosRouter.use(requireAuth, requireRole("DELAVEC"));
+photosRouter.use(requireAuth);
 
 const bodySchema = z.object({
   id: z.string().uuid().optional(),
@@ -32,46 +21,52 @@ const bodySchema = z.object({
   takenAt: z.coerce.date().optional(),
 });
 
-photosRouter.post("/", upload.single("photo"), async (req, res) => {
+photosRouter.post("/", requireRole("DELAVEC"), upload.single("photo"), async (req, res) => {
   const file = req.file;
-  const discard = () => file && fs.unlink(file.path, () => {});
-
-  if (!file) return res.status(400).json({ error: "Manjka fotografija" });
+  if (!file) return res.status(400).json({ error: "Manjka fotografija (JPEG ali PNG)" });
   const parsed = bodySchema.safeParse(req.body);
-  if (!parsed.success) {
-    discard();
-    return res.status(400).json({ error: "Napačni podatki" });
-  }
+  if (!parsed.success) return res.status(400).json({ error: "Napačni podatki" });
   const { id, workOrderId, kind, takenAt } = parsed.data;
   const userId = req.user!.id;
 
   if (id) {
     const existing = await prisma.photo.findUnique({ where: { id } });
-    if (existing && existing.userId === userId) {
-      discard();
-      return res.json(existing);
-    }
+    if (existing && existing.userId === userId) return res.json(existing);
   }
 
   const order = await prisma.workOrder.findUnique({ where: { id: workOrderId } });
   if (!order || order.workerId !== userId) {
-    discard();
     return res.status(404).json({ error: "Naloga ni" });
   }
   if (order.status === "ZAKLJUCEN") {
-    discard();
     return res.status(400).json({ error: "Naloga je zaključena" });
   }
 
+  const photoId = id ?? randomUUID();
   const photo = await prisma.photo.create({
     data: {
-      ...(id ? { id } : {}),
+      id: photoId,
       workOrderId,
       userId,
       kind,
-      path: `/uploads/${file.filename}`,
+      path: `/photos/${photoId}/file`,
       takenAt: takenAt ?? new Date(),
+      file: { create: { mimeType: file.mimetype, data: file.buffer } },
     },
   });
   res.status(201).json(photo);
+});
+
+photosRouter.get("/:id/file", async (req, res) => {
+  const photo = await prisma.photo.findUnique({
+    where: { id: req.params.id as string },
+    include: { file: true },
+  });
+  if (!photo || !photo.file) return res.status(404).json({ error: "Fotografije ni" });
+  if (req.user!.role === "DELAVEC" && photo.userId !== req.user!.id) {
+    return res.status(403).json({ error: "Ni dovoljenja" });
+  }
+  res.setHeader("Content-Type", photo.file.mimeType);
+  res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
+  res.send(Buffer.from(photo.file.data));
 });

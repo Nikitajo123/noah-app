@@ -478,3 +478,6 @@ a.orow:hover { background: var(--fog); }
 .voice-btn.on { background: var(--red); animation: pulse 1.2s infinite; }
 .voice-btn.on svg { color: var(--paper); }
 @keyframes pulse { 50% { opacity: 0.75; } }
+
+.ph-placeholder { aspect-ratio: 1; border-radius: 14px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--mute); }
+.thumb a { display: block; }
