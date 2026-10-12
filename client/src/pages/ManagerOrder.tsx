@@ -28,16 +28,31 @@ const KIND_LABEL: Record<PhotoKind, string> = {
 };
 
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
+const dayKey = (iso: string) => new Date(iso).toLocaleDateString("sv-SE");
+const dayLabel = (key: string) =>
+  new Date(`${key}T00:00:00`).toLocaleDateString("sl-SI", { day: "numeric", month: "numeric" });
 
 export default function ManagerOrder() {
   const { id } = useParams();
-  const [sp] = useSearchParams();
-  const date = sp.get("date") ?? todayKey();
+  const [sp, setSp] = useSearchParams();
 
   const orderQ = useQuery({
     queryKey: ["order", id],
     queryFn: () => api<WorkOrderDetail>(`/work-orders/${id}`),
   });
+
+  // Days on which the worker recorded anything on this order. Without a date in the
+  // link (e.g. from Projekti) the report opens on the last of them, not on today.
+  const d = orderQ.data;
+  const workDays = d
+    ? [
+        ...d.timeEntries.map((e) => e.startedAt),
+        ...d.workLogs.map((l) => l.createdAt),
+        ...d.photos.map((p) => p.takenAt),
+      ].map(dayKey)
+    : [];
+  const date = sp.get("date") ?? workDays.sort().at(-1) ?? todayKey();
+  const reportDays = [...new Set([...workDays, date])].sort();
   const workerId = orderQ.data?.worker.id;
   const reportQ = useQuery({
     queryKey: ["report", workerId, date],
@@ -198,6 +213,20 @@ export default function ManagerOrder() {
       </div>
 
       <h2 className="rep-title">Dnevno poročilo, {dateText}</h2>
+      {reportDays.length > 1 && (
+        <div className="day-chips">
+          {reportDays.map((k) => (
+            <button
+              key={k}
+              className={k === date ? "on" : ""}
+              aria-pressed={k === date}
+              onClick={() => setSp({ date: k }, { replace: true })}
+            >
+              {dayLabel(k)}
+            </button>
+          ))}
+        </div>
+      )}
       {reportQ.isLoading && (
         <div className="section">
           <Skeleton rows={1} />

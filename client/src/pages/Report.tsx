@@ -3,11 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, downloadPdf } from "../api";
 import ReportView from "../components/ReportView";
 import { Skeleton } from "../components/States";
-import { IconCheck, IconDownload, IconEdit } from "../components/Icons";
+import { IconBack, IconCheck, IconChevron, IconDownload, IconEdit } from "../components/Icons";
 import { formatTime } from "../format";
 import type { DailyReportData } from "../types";
 
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
+const shiftDay = (key: string, by: number) => {
+  const d = new Date(`${key}T12:00:00`);
+  d.setDate(d.getDate() + by);
+  return d.toLocaleDateString("sv-SE");
+};
 
 export default function Report() {
   const qc = useQueryClient();
@@ -35,13 +40,32 @@ export default function Report() {
     <>
       <header className="top">
         <h1>Dnevno poročilo</h1>
-        <input
-          className="date-input"
-          type="date"
-          value={date}
-          max={todayKey()}
-          onChange={(e) => e.target.value && setDate(e.target.value)}
-        />
+        <div className="date-nav">
+          <button
+            type="button"
+            className="day-btn"
+            aria-label="Prejšnji dan"
+            onClick={() => setDate(shiftDay(date, -1))}
+          >
+            <IconBack />
+          </button>
+          <input
+            className="date-input"
+            type="date"
+            value={date}
+            max={todayKey()}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+          />
+          <button
+            type="button"
+            className="day-btn"
+            aria-label="Naslednji dan"
+            disabled={date >= todayKey()}
+            onClick={() => setDate(shiftDay(date, 1))}
+          >
+            <IconChevron />
+          </button>
+        </div>
       </header>
 
       <div className="report-body">

@@ -1071,3 +1071,44 @@ a.orow:active { background: var(--line); }
   .kpi-ic { display: flex; }
 }
 @media (min-width: 900px) { .kpi b { font-size: 40px; } }
+
+/* ---------- report day picking ---------- */
+.date-nav { display: flex; align-items: center; gap: var(--s2); margin-top: 14px; }
+.date-nav .date-input { flex: 1; margin-top: 0; }
+.day-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--paper);
+  cursor: pointer;
+}
+.day-btn:active { transform: scale(0.94); background: rgba(255, 255, 255, 0.2); }
+.day-chips {
+  display: flex;
+  gap: var(--s2);
+  margin: var(--s3) 0 var(--s2);
+  padding: 0 var(--s5) var(--s1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.day-chips button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  cursor: pointer;
+}
+.day-chips button.on { background: var(--acc); border-color: var(--acc); }
+.day-chips button:active { transform: scale(0.96); }
