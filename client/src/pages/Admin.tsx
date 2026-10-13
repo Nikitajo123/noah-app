@@ -23,6 +23,7 @@ function OrderForm() {
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("kos");
   const [hours, setHours] = useState("");
+  const [workDate, setWorkDate] = useState(todayKey());
   const [due, setDue] = useState(todayKey());
   const [materials, setMaterials] = useState("");
   const [done, setDone] = useState("");
@@ -37,6 +38,7 @@ function OrderForm() {
           description: description.trim(),
           ...(qty !== "" ? { plannedQty: Number(qty), plannedUnit: unit } : {}),
           ...(hours !== "" ? { plannedHours: Number(hours) } : {}),
+          workDate: `${workDate}T12:00:00`,
           dueDate: `${due}T12:00:00`,
           materials: materials
             .split("\n")
@@ -64,12 +66,7 @@ function OrderForm() {
 
   return (
     <form onSubmit={submit}>
-      {done && (
-        <div className="okmsg" role="status">
-          <IconCheck size={18} />
-          {done}
-        </div>
-      )}
+      {done && <div className="okmsg">{done}</div>}
       <label className="field">
         Projekt
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
@@ -122,16 +119,24 @@ function OrderForm() {
           </select>
         </label>
       </div>
+      <label className="field">
+        Predviden čas (ure)
+        <input
+          type="number"
+          inputMode="decimal"
+          step="any"
+          min="0"
+          value={hours}
+          onChange={(e) => setHours(e.target.value)}
+        />
+      </label>
       <div className="two">
         <label className="field">
-          Predviden čas (ure)
+          Datum
           <input
-            type="number"
-            inputMode="decimal"
-            step="any"
-            min="0"
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
+            type="date"
+            value={workDate}
+            onChange={(e) => e.target.value && setWorkDate(e.target.value)}
           />
         </label>
         <label className="field">

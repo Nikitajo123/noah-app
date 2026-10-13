@@ -36,7 +36,11 @@ overviewRouter.get("/", async (req, res) => {
   const orders = await prisma.workOrder.findMany({
     where: {
       ...(q.data.projectId ? { projectId: q.data.projectId } : {}),
-      OR: [{ timeEntries: { some: { startedAt: day } } }, { dueDate: day }],
+      OR: [
+        { timeEntries: { some: { startedAt: day } } },
+        { dueDate: day },
+        { status: "PROBLEM" },
+      ],
     },
     include: {
       project: true,

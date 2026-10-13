@@ -66,6 +66,7 @@ model WorkOrder {
   plannedUnit  String?
   plannedHours Float?
   dueDate      DateTime
+  workDate     DateTime    @default(now())
   status       OrderStatus @default(NOV)
   materials    Material[]
   timeEntries  TimeEntry[]

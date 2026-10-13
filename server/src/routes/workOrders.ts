@@ -70,6 +70,7 @@ const createSchema = z.object({
   plannedUnit: z.string().optional(),
   plannedHours: z.number().optional(),
   dueDate: z.coerce.date(),
+  workDate: z.coerce.date().optional(),
   materials: z.array(z.string()).default([]),
 });
 

@@ -154,6 +154,13 @@ export default function OrderDetail() {
 
       <div className="info-grid">
         <div className="info">
+          <small>Datum in rok</small>
+          <strong>
+            {new Date(order.workDate).toLocaleDateString("sl-SI")}, rok{" "}
+            {new Date(order.dueDate).toLocaleDateString("sl-SI")}
+          </strong>
+        </div>
+        <div className="info">
           <small>Planirano</small>
           <strong>{plannedText(order) || "Ni podatka"}</strong>
         </div>

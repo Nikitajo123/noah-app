@@ -121,6 +121,13 @@ export default function ManagerOrder() {
 
       <div className="info-grid">
         <div className="info">
+          <small>Datum in rok</small>
+          <strong>
+            {new Date(o.workDate).toLocaleDateString("sl-SI")}, rok{" "}
+            {new Date(o.dueDate).toLocaleDateString("sl-SI")}
+          </strong>
+        </div>
+        <div className="info">
           <small>Planirano</small>
           <strong>{plannedText(o) || "Ni podatka"}</strong>
         </div>

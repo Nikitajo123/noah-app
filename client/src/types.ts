@@ -17,6 +17,7 @@ export type WorkOrder = {
   plannedUnit: string | null;
   plannedHours: number | null;
   dueDate: string;
+  workDate: string;
   status: Status;
   project: Project;
   worker: { id: string; name: string };
