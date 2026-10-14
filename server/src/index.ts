@@ -12,6 +12,7 @@ import { photosRouter } from "./routes/photos";
 import { overviewRouter, reportsRouter } from "./routes/reports";
 import { usersRouter } from "./routes/admin";
 import { timeEntriesRouter } from "./routes/timeEntries";
+import { teamsRouter, teamReportsRouter, projectHoursRouter } from "./routes/teams";
 
 const app = express();
 app.use(cors());
@@ -34,6 +35,9 @@ api.use("/materials", materialsRouter);
 api.use("/photos", photosRouter);
 api.use("/overview", overviewRouter);
 api.use("/reports", reportsRouter);
+api.use("/teams", teamsRouter);
+api.use("/team-reports", teamReportsRouter);
+api.use("/project-hours", projectHoursRouter);
 app.use("/api", api);
 
 const clientDist = path.resolve(__dirname, "../../client/dist");
@@ -44,6 +48,15 @@ if (fs.existsSync(clientDist)) {
     res.sendFile(path.join(clientDist, "index.html"));
   });
 }
+
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const e = err as { code?: string };
+  if (e?.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "Fotografija je prevelika" });
+  }
+  console.error(err);
+  res.status(500).json({ error: "Napaka strežnika" });
+});
 
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => {

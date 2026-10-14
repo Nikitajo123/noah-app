@@ -45,6 +45,10 @@ model User {
   reports       DailyReport[]
   notes         OrderNote[]       @relation("noteAuthor")
   timeEdits     TimeEntryEdit[]   @relation("entryEditor")
+  teamId          String?
+  team            Team?        @relation("members", fields: [teamId], references: [id])
+  foremanOf       Team[]       @relation("foreman")
+  teamReportsSent TeamReport[] @relation("teamReportSubmitter")
 }
 
 model Project {
@@ -170,4 +174,27 @@ model TimeEntryEdit {
   newStartedAt DateTime
   newEndedAt   DateTime
   createdAt    DateTime  @default(now())
+}
+
+model Team {
+  id        String       @id @default(uuid())
+  name      String       @unique
+  foremanId String
+  foreman   User         @relation("foreman", fields: [foremanId], references: [id])
+  members   User[]       @relation("members")
+  reports   TeamReport[]
+}
+
+model TeamReport {
+  id            String       @id @default(uuid())
+  teamId        String
+  team          Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  date          DateTime     @db.Date
+  status        ReportStatus @default(OSNUTEK)
+  summary       String?
+  submittedAt   DateTime?
+  submittedById String?
+  submittedBy   User?        @relation("teamReportSubmitter", fields: [submittedById], references: [id])
+
+  @@unique([teamId, date])
 }

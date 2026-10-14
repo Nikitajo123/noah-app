@@ -5,8 +5,9 @@ import StatusChip from "../components/StatusChip";
 import type { Project, WorkOrder } from "../types";
 import { EmptyState, Skeleton } from "../components/States";
 import { IconCheck } from "../components/Icons";
+import TeamsAdmin from "../components/TeamsAdmin";
 
-type Tab = "order" | "orders" | "project" | "user";
+type Tab = "order" | "orders" | "project" | "user" | "teams";
 type Worker = { id: string; name: string };
 type UserRow = { id: string; name: string; email: string; role: "DELAVEC" | "VODJA" };
 
@@ -357,6 +358,7 @@ export default function Admin() {
     { id: "orders", label: "Nalogi" },
     { id: "project", label: "Projekt" },
     { id: "user", label: "Uporabnik" },
+    { id: "teams", label: "Ekipe" },
   ];
 
   return (
@@ -365,7 +367,7 @@ export default function Admin() {
         <h1>Upravljanje</h1>
         <p>Ustvari naloge, projekte in uporabnike</p>
       </header>
-      <div className="seg four">
+      <div className="seg five">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -382,6 +384,7 @@ export default function Admin() {
         {tab === "orders" && <OrdersList />}
         {tab === "project" && <ProjectForm />}
         {tab === "user" && <UserForm />}
+        {tab === "teams" && <TeamsAdmin />}
       </div>
     </>
   );

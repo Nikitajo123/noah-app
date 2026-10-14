@@ -11,6 +11,7 @@ import ManagerOverview from "./pages/ManagerOverview";
 import ManagerOrder from "./pages/ManagerOrder";
 import ProjectsList from "./pages/ProjectsList";
 import Admin from "./pages/Admin";
+import Reports from "./pages/Reports";
 import { Spinner } from "./components/States";
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route element={<ManagerLayout />}>
           <Route path="/" element={<ManagerOverview />} />
           <Route path="/nalog/:id" element={<ManagerOrder />} />
+          <Route path="/porocila" element={<Reports />} />
           <Route path="/projekti" element={<ProjectsList />} />
           <Route path="/upravljanje" element={<Admin />} />
           <Route path="/profil" element={<Profile />} />

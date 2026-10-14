@@ -36,3 +36,5 @@ Mobile-first PWA for construction workers (work orders, time tracking, photos, d
 - Do not add features outside Matej's brief. Keep changes small and explain each one briefly.
 
 - Manager can add notes to an order, mark a PROBLEM as resolved (status back to V_DELU), and correct time entries. Every correction is stored in TimeEntryEdit (old and new times, reason, editor).
+
+- Teams: a Team has a foreman (a DELAVEC) and members (User.teamId, a worker is in one team). The foreman writes a summary and submits one TeamReport per team per day. The personal report (DailyReport) still exists as "Moje ure". Manager tab Poročila shows team reports per day and hours per project.

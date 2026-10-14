@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { IconManage, IconOverview, IconProjects, IconUser } from "./Icons";
+import { IconManage, IconOverview, IconProjects, IconReport, IconUser } from "./Icons";
 
 const cls = ({ isActive }: { isActive: boolean }) => (isActive ? "mtab active" : "mtab");
 
@@ -15,6 +15,10 @@ export default function ManagerLayout() {
           <NavLink to="/" end className={cls}>
             <span className="ic"><IconOverview /></span>
             Pregled
+          </NavLink>
+          <NavLink to="/porocila" className={cls}>
+            <span className="ic"><IconReport /></span>
+            Poročila
           </NavLink>
           <NavLink to="/projekti" className={cls}>
             <span className="ic"><IconProjects /></span>

@@ -32,7 +32,7 @@ timeRouter.post("/start", async (req, res) => {
   if (!order || !(await isAssigned(workOrderId, userId))) {
     return res.status(404).json({ error: "Naloga ni" });
   }
-  if (order.status !== "V_DELU") {
+    if (order.status !== "V_DELU" && order.status !== "PROBLEM") {
     return res.status(400).json({ error: "Najprej začni delovni nalog" });
   }
   const open = await prisma.timeEntry.findFirst({ where: { userId, endedAt: null } });
