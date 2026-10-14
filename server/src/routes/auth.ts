@@ -30,7 +30,28 @@ authRouter.post("/login", async (req, res) => {
   });
 });
 
-authRouter.get("/me", requireAuth, async (req, res) => {
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
+});
+
+authRouter.post("/change-password", requireAuth, async (req, res) => {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Novo geslo mora imeti vsaj 8 znakov" });
+  }
+  const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!user || !(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) {
+    return res.status(400).json({ error: "Trenutno geslo ni pravilno" });
+  }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 10) },
+  });
+  res.json({ ok: true });
+});
+
+authRouter.get("/me",requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
     select: { id: true, name: true, email: true, role: true },

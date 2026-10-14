@@ -6,6 +6,7 @@ import type { Project, WorkOrder } from "../types";
 import { EmptyState, Skeleton } from "../components/States";
 import { IconCheck } from "../components/Icons";
 import TeamsAdmin from "../components/TeamsAdmin";
+import ResetPassword from "../components/ResetPassword";
 
 type Tab = "order" | "orders" | "project" | "user" | "teams";
 type Worker = { id: string; name: string };
@@ -318,7 +319,7 @@ function UserForm() {
           />
         </label>
         <label className="field">
-          Geslo (vsaj 6 znakov)
+          Geslo (vsaj 8 znakov)
           <input value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" />
         </label>
         <label className="field">
@@ -331,7 +332,7 @@ function UserForm() {
         {create.error && <p className="error">{create.error.message}</p>}
         <button
           className="btn-primary"
-          disabled={create.isPending || !name.trim() || !email.trim() || password.length < 6}
+          disabled={create.isPending || !name.trim() || !email.trim() || password.length < 8}
         >
           {create.isPending ? "Ustvarjam..." : "Ustvari uporabnika"}
         </button>
@@ -345,6 +346,7 @@ function UserForm() {
             <small className="muted">{u.email}</small>
           </div>
           <small>{u.role === "VODJA" ? "vodja" : "delavec"}</small>
+          <ResetPassword userId={u.id} name={u.name} />
         </div>
       ))}
     </>
