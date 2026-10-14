@@ -30,6 +30,8 @@ async function main() {
     projects = await prisma.project.findMany();
   }
   const novak = projects.find((p) => p.name === "Hiša Novak")!;
+  const muller = projects.find((p) => p.name === "Hiša Müller")!;
+  const kovac = projects.find((p) => p.name === "Hiša Kovač")!;
 
   await prisma.workOrder.upsert({
     where: { number: "2026-00125" },
@@ -37,25 +39,18 @@ async function main() {
     create: {
       number: "2026-00125",
       projectId: novak.id,
-      workerId: marko.id,
       managerId: vodja.id,
+      workers: { create: [{ userId: marko.id }] },
       description: "Montaža zunanjih stenskih elementov na severni strani objekta.",
       plannedQty: 8,
       plannedUnit: "kos",
       plannedHours: 8,
       dueDate: new Date(),
       materials: {
-        create: [
-          { name: "stenski elementi" },
-          { name: "vijaki" },
-          { name: "tesnilni material" },
-        ],
+        create: [{ name: "stenski elementi" }, { name: "vijaki" }, { name: "tesnilni material" }],
       },
     },
   });
-
-  const muller = projects.find((p) => p.name === "Hiša Müller")!;
-  const kovac = projects.find((p) => p.name === "Hiša Kovač")!;
 
   await prisma.workOrder.upsert({
     where: { number: "2026-00126" },
@@ -63,8 +58,8 @@ async function main() {
     create: {
       number: "2026-00126",
       projectId: muller.id,
-      workerId: luka.id,
       managerId: vodja.id,
+      workers: { create: [{ userId: luka.id }, { userId: marko.id }] },
       description: "Montaža strešne konstrukcije.",
       plannedQty: 12,
       plannedUnit: "kos",
@@ -80,8 +75,8 @@ async function main() {
     create: {
       number: "2026-00127",
       projectId: kovac.id,
-      workerId: luka.id,
       managerId: vodja.id,
+      workers: { create: [{ userId: luka.id }] },
       description: "Montaža notranjih sten v pritličju.",
       plannedQty: 6,
       plannedUnit: "kos",
@@ -90,7 +85,6 @@ async function main() {
       materials: { create: [{ name: "mavčne plošče" }, { name: "profili" }] },
     },
   });
-
 }
 
 main().finally(() => prisma.$disconnect());

@@ -110,7 +110,7 @@ export default function ManagerOverview() {
             <span>Status</span>
           </div>
           {rows.map((r) => (
-            <Link key={r.workOrderId} to={link(r)} className="orow">
+            <Link key={`${r.workOrderId}-${r.worker.id}`} to={link(r)} className="orow">
               <b>{r.worker.name}</b>
               <span>{r.project.name}</span>
               <span>{r.number}</span>
@@ -125,7 +125,7 @@ export default function ManagerOverview() {
 
       <div className="ocards">
         {rows.map((r) => (
-          <Link key={r.workOrderId} to={link(r)} className="card" data-status={r.status}>
+          <Link key={`${r.workOrderId}-${r.worker.id}`} to={link(r)} className="card" data-status={r.status}>
             <div className="card-top">
               <b className="card-who">{r.worker.name}</b>
               <StatusChip status={r.status} />

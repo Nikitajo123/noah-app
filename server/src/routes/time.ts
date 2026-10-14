@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
+import { isAssigned } from "../access";
 
 export const timeRouter = Router();
 timeRouter.use(requireAuth, requireRole("DELAVEC"));
@@ -28,7 +29,7 @@ timeRouter.post("/start", async (req, res) => {
   }
 
   const order = await prisma.workOrder.findUnique({ where: { id: workOrderId } });
-  if (!order || order.workerId !== userId) {
+  if (!order || !(await isAssigned(workOrderId, userId))) {
     return res.status(404).json({ error: "Naloga ni" });
   }
   if (order.status !== "V_DELU") {

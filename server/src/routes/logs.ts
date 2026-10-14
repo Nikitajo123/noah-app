@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
+import { isAssigned } from "../access";
 
 export const logsRouter = Router();
 logsRouter.use(requireAuth, requireRole("DELAVEC"));
@@ -27,7 +28,7 @@ logsRouter.post("/", async (req, res) => {
   }
 
   const order = await prisma.workOrder.findUnique({ where: { id: workOrderId } });
-  if (!order || order.workerId !== userId) {
+  if (!order || !(await isAssigned(workOrderId, userId))) {
     return res.status(404).json({ error: "Naloga ni" });
   }
   if (order.status !== "V_DELU" && order.status !== "PROBLEM") {
@@ -47,11 +48,8 @@ materialsRouter.patch("/:id", async (req, res) => {
   const parsed = z.object({ usedQty: z.number().min(0) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Napačni podatki" });
   const id = req.params.id as string;
-  const material = await prisma.material.findUnique({
-    where: { id },
-    include: { workOrder: true },
-  });
-  if (!material || material.workOrder.workerId !== req.user!.id) {
+  const material = await prisma.material.findUnique({ where: { id } });
+  if (!material || !(await isAssigned(material.workOrderId, req.user!.id))) {
     return res.status(404).json({ error: "Materiala ni" });
   }
   const updated = await prisma.material.update({

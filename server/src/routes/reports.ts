@@ -44,27 +44,32 @@ overviewRouter.get("/", async (req, res) => {
     },
     include: {
       project: true,
-      worker: { select: { id: true, name: true } },
+      workers: { include: { user: { select: { id: true, name: true } } } },
       timeEntries: { where: { startedAt: day }, orderBy: { startedAt: "asc" } },
     },
     orderBy: { number: "asc" },
   });
 
-  const rows = orders.map((o) => {
-    const entries = o.timeEntries;
-    const running = entries.some((e) => !e.endedAt);
-    const finished = entries.filter((e) => e.endedAt);
-    const hours = finished.reduce((s, e) => s + hoursOf(e.startedAt, e.endedAt!), 0);
-    return {
-      workOrderId: o.id,
-      number: o.number,
-      worker: o.worker,
-      project: { id: o.project.id, name: o.project.name, location: o.project.location },
-      arrival: entries[0]?.startedAt ?? null,
-      departure: running ? null : entries[entries.length - 1]?.endedAt ?? null,
-      hours: entries.length ? r2(hours) : null,
-      status: o.status,
-    };
+  const rows = orders.flatMap((o) => {
+    const people = o.workers.map((w) => w.user);
+    const active = people.filter((p) => o.timeEntries.some((e) => e.userId === p.id));
+    return (active.length ? active : people).map((p) => {
+      const entries = o.timeEntries.filter((e) => e.userId === p.id);
+      const running = entries.some((e) => !e.endedAt);
+      const hours = entries
+        .filter((e) => e.endedAt)
+        .reduce((s, e) => s + hoursOf(e.startedAt, e.endedAt!), 0);
+      return {
+        workOrderId: o.id,
+        number: o.number,
+        worker: p,
+        project: { id: o.project.id, name: o.project.name, location: o.project.location },
+        arrival: entries[0]?.startedAt ?? null,
+        departure: running ? null : entries[entries.length - 1]?.endedAt ?? null,
+        hours: entries.length ? r2(hours) : null,
+        status: o.status,
+      };
+    });
   });
   res.json(rows);
 });
@@ -83,7 +88,7 @@ export async function buildReport(userId: string, date?: string) {
 
   const orders = await prisma.workOrder.findMany({
     where: {
-      workerId: userId,
+      workers: { some: { userId } },
       OR: [
         { timeEntries: { some: { userId, startedAt: day } } },
         { workLogs: { some: { userId, createdAt: day } } },
@@ -162,6 +167,39 @@ reportsRouter.get("/", async (req, res) => {
   const report = await buildReport(userId, q.data.date);
   if (!report) return res.status(404).json({ error: "Delavca ni" });
   res.json(report);
+});
+
+reportsRouter.get("/day", requireRole("VODJA"), async (req, res) => {
+  const q = z.object({ date: z.string().regex(dateRe).optional() }).safeParse(req.query);
+  if (!q.success) return res.status(400).json({ error: "Napačen datum" });
+  const { start, end, reportDate } = dayInfo(q.data.date);
+  const day = { gte: start, lt: end };
+
+  const [te, wl, ph, saved] = await Promise.all([
+    prisma.timeEntry.findMany({ where: { startedAt: day }, select: { userId: true }, distinct: ["userId"] }),
+    prisma.workLog.findMany({ where: { createdAt: day }, select: { userId: true }, distinct: ["userId"] }),
+    prisma.photo.findMany({ where: { takenAt: day }, select: { userId: true }, distinct: ["userId"] }),
+    prisma.dailyReport.findMany({ where: { date: reportDate }, select: { userId: true } }),
+  ]);
+  const ids = new Set([...te, ...wl, ...ph, ...saved].map((r) => r.userId));
+
+  const rows = [];
+  for (const userId of ids) {
+    const r = await buildReport(userId, q.data.date);
+    if (!r || (r.orders.length === 0 && r.status !== "ODDANO")) continue;
+    rows.push({
+      userId,
+      name: r.worker.name,
+      status: r.status,
+      submittedAt: r.submittedAt,
+      totalHours: r.totalHours,
+      orders: r.orders.length,
+      photos: r.orders.reduce((s, o) => s + o.photos.length, 0),
+      problem: r.orders.some((o) => o.status === "PROBLEM" || o.problems.length > 0),
+    });
+  }
+  rows.sort((a, b) => a.name.localeCompare(b.name));
+  res.json(rows);
 });
 
 reportsRouter.get("/pdf", async (req, res) => {

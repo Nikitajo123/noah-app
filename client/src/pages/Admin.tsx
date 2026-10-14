@@ -18,7 +18,7 @@ function OrderForm() {
   const workers = useQuery({ queryKey: ["workers"], queryFn: () => api<Worker[]>("/workers") });
 
   const [projectId, setProjectId] = useState("");
-  const [workerId, setWorkerId] = useState("");
+  const [workerIds, setWorkerIds] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("kos");
@@ -28,13 +28,16 @@ function OrderForm() {
   const [materials, setMaterials] = useState("");
   const [done, setDone] = useState("");
 
+  const toggle = (id: string) =>
+    setWorkerIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
   const create = useMutation({
     mutationFn: () =>
       api<WorkOrder>("/work-orders", {
         method: "POST",
         body: JSON.stringify({
           projectId,
-          workerId,
+          workerIds,
           description: description.trim(),
           ...(qty !== "" ? { plannedQty: Number(qty), plannedUnit: unit } : {}),
           ...(hours !== "" ? { plannedHours: Number(hours) } : {}),
@@ -52,6 +55,7 @@ function OrderForm() {
       setQty("");
       setHours("");
       setMaterials("");
+      setWorkerIds([]);
       qc.invalidateQueries({ queryKey: ["all-orders"] });
       qc.invalidateQueries({ queryKey: ["overview"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
@@ -78,17 +82,15 @@ function OrderForm() {
           ))}
         </select>
       </label>
-      <label className="field">
-        Delavec
-        <select value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-          <option value="">Izberi delavca</option>
-          {workers.data?.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="checks">
+        <legend>Delavci (en ali več)</legend>
+        {workers.data?.map((w) => (
+          <label key={w.id} className="check">
+            <input type="checkbox" checked={workerIds.includes(w.id)} onChange={() => toggle(w.id)} />
+            {w.name}
+          </label>
+        ))}
+      </fieldset>
       <label className="field">
         Naloga
         <textarea
@@ -155,7 +157,7 @@ function OrderForm() {
       {create.error && <p className="error">{create.error.message}</p>}
       <button
         className="btn-primary"
-        disabled={create.isPending || !projectId || !workerId || !description.trim()}
+        disabled={create.isPending || !projectId || workerIds.length === 0 || !description.trim()}
       >
         {create.isPending ? "Ustvarjam..." : "Ustvari nalog"}
       </button>

@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
+import { isAssigned } from "../access";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -35,7 +36,7 @@ photosRouter.post("/", requireRole("DELAVEC"), upload.single("photo"), async (re
   }
 
   const order = await prisma.workOrder.findUnique({ where: { id: workOrderId } });
-  if (!order || order.workerId !== userId) {
+  if (!order || !(await isAssigned(workOrderId, userId))) {
     return res.status(404).json({ error: "Naloga ni" });
   }
   if (order.status === "ZAKLJUCEN") {
@@ -63,7 +64,7 @@ photosRouter.get("/:id/file", async (req, res) => {
     include: { file: true },
   });
   if (!photo || !photo.file) return res.status(404).json({ error: "Fotografije ni" });
-  if (req.user!.role === "DELAVEC" && photo.userId !== req.user!.id) {
+  if (req.user!.role === "DELAVEC" && !(await isAssigned(photo.workOrderId, req.user!.id))) {
     return res.status(403).json({ error: "Ni dovoljenja" });
   }
   res.setHeader("Content-Type", photo.file.mimeType);

@@ -5,6 +5,7 @@ export type Project = { id: string; name: string; location: string };
 export type Material = { id: string; name: string; usedQty: number | null };
 export type TimeEntry = {
   id: string;
+  user?: { id: string; name: string };
   startedAt: string;
   endedAt: string | null;
 };
@@ -21,11 +22,13 @@ export type WorkOrder = {
   status: Status;
   project: Project;
   worker: { id: string; name: string };
+  workers: { id: string; name: string }[];
   materials: Material[];
 };
 
 export type WorkLog = {
   id: string;
+  user?: { id: string; name: string };
   description: string;
   quantity: number | null;
   unit: string | null;

@@ -1112,3 +1112,12 @@ a.orow:active { background: var(--line); }
 }
 .day-chips button.on { background: var(--acc); border-color: var(--acc); }
 .day-chips button:active { transform: scale(0.96); }
+
+.checks { border: 1.5px solid var(--line); border-radius: 14px; padding: 8px 14px 6px; margin: 0 0 12px; }
+.checks legend { font-size: 13px; color: var(--mute); padding: 0 6px; }
+.check { display: flex; align-items: center; gap: 12px; min-height: 44px; font-size: 16px; color: var(--ink); cursor: pointer; }
+.check input { width: 22px; height: 22px; accent-color: var(--acc); }
+.wk-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.wk-row.total { border-bottom: 0; font-weight: 700; }
+.wk-live { color: #1f6b3e; font-style: normal; font-size: 12px; font-weight: 700; }
+.wk-edit { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }

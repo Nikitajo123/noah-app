@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, downloadPdf } from "../api";
 import StatusChip from "../components/StatusChip";
@@ -34,14 +35,37 @@ const dayLabel = (key: string) =>
 
 export default function ManagerOrder() {
   const { id } = useParams();
+  const qc = useQueryClient();
   const [sp, setSp] = useSearchParams();
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [reportUser, setReportUser] = useState<string | null>(null);
 
   const orderQ = useQuery({
     queryKey: ["order", id],
     queryFn: () => api<WorkOrderDetail>(`/work-orders/${id}`),
   });
+  const workersQ = useQuery({
+    queryKey: ["workers"],
+    queryFn: () => api<{ id: string; name: string }[]>("/workers"),
+  });
 
-  // Days on which the worker recorded anything on this order. Without a date in the
+  const saveWorkers = useMutation({
+    mutationFn: () =>
+      api(`/work-orders/${id}/workers`, {
+        method: "PUT",
+        body: JSON.stringify({ workerIds: selected }),
+      }),
+    onSuccess: () => {
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ["order", id] });
+      qc.invalidateQueries({ queryKey: ["overview"] });
+      qc.invalidateQueries({ queryKey: ["all-orders"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+
+  // Days on which anyone recorded something on this order. Without a date in the
   // link (e.g. from Projekti) the report opens on the last of them, not on today.
   const d = orderQ.data;
   const workDays = d
@@ -53,16 +77,17 @@ export default function ManagerOrder() {
     : [];
   const date = sp.get("date") ?? workDays.sort().at(-1) ?? todayKey();
   const reportDays = [...new Set([...workDays, date])].sort();
-  const workerId = orderQ.data?.worker.id;
+
+  const reportWorkerId = reportUser ?? d?.workers[0]?.id;
   const reportQ = useQuery({
-    queryKey: ["report", workerId, date],
-    enabled: !!workerId,
-    queryFn: () => api<DailyReportData>(`/reports?userId=${workerId}&date=${date}`),
+    queryKey: ["report", reportWorkerId, date],
+    enabled: !!reportWorkerId,
+    queryFn: () => api<DailyReportData>(`/reports?userId=${reportWorkerId}&date=${date}`),
   });
 
   const pdf = useMutation({
     mutationFn: () =>
-      downloadPdf(`/reports/pdf?userId=${workerId}&date=${date}`, `porocilo-${date}.pdf`),
+      downloadPdf(`/reports/pdf?userId=${reportWorkerId}&date=${date}`, `porocilo-${date}.pdf`),
   });
 
   if (orderQ.isLoading) {
@@ -82,12 +107,30 @@ export default function ManagerOrder() {
   const total = o.timeEntries
     .filter((e) => e.endedAt)
     .reduce((s, e) => s + hoursOf(e.startedAt, e.endedAt!), 0);
+  const perWorker = o.workers.map((w) => {
+    const entries = o.timeEntries.filter((e) => e.user?.id === w.id);
+    return {
+      ...w,
+      hours: entries
+        .filter((e) => e.endedAt)
+        .reduce((s, e) => s + hoursOf(e.startedAt, e.endedAt!), 0),
+      running: entries.some((e) => !e.endedAt),
+    };
+  });
   const lastNote = [...o.workLogs].reverse().find((l) => l.note)?.note;
   const dateText = new Date(date).toLocaleDateString("sl-SI", {
     day: "numeric",
     month: "numeric",
     year: "numeric",
   });
+
+  function startEdit() {
+    setSelected(o.workers.map((w) => w.id));
+    saveWorkers.reset();
+    setEditing(true);
+  }
+  const toggle = (wid: string) =>
+    setSelected((s) => (s.includes(wid) ? s.filter((x) => x !== wid) : [...s, wid]));
 
   return (
     <div className="mdetail">
@@ -114,7 +157,7 @@ export default function ManagerOrder() {
       <div className="section">
         <h2 className="project">{o.project.name}</h2>
         <p className="muted">
-          {o.project.location}, delavec {o.worker.name}
+          {o.project.location}, delavci: {o.workers.map((w) => w.name).join(", ")}
         </p>
         <p className="desc">{o.description}</p>
       </div>
@@ -134,6 +177,57 @@ export default function ManagerOrder() {
       </div>
 
       <div className="section panel">
+        <h3 className="panel-title">Delavci na nalogu</h3>
+        {perWorker.map((w) => (
+          <div key={w.id} className="wk-row">
+            <span>
+              {w.name}
+              {w.running && <em className="wk-live"> dela</em>}
+            </span>
+            <b>{w.hours.toFixed(2)} h</b>
+          </div>
+        ))}
+        <div className="wk-row total">
+          <span>Skupaj ur</span>
+          <b>{total.toFixed(2)} h</b>
+        </div>
+
+        {o.status !== "ZAKLJUCEN" && !editing && (
+          <button className="btn-secondary" onClick={startEdit}>
+            Spremeni delavce
+          </button>
+        )}
+        {editing && (
+          <div className="wk-edit">
+            <fieldset className="checks">
+              <legend>Izberi delavce</legend>
+              {workersQ.data?.map((w) => (
+                <label key={w.id} className="check">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(w.id)}
+                    onChange={() => toggle(w.id)}
+                  />
+                  {w.name}
+                </label>
+              ))}
+            </fieldset>
+            {saveWorkers.error && <p className="error">{saveWorkers.error.message}</p>}
+            <button
+              className="btn-primary"
+              disabled={saveWorkers.isPending || selected.length === 0}
+              onClick={() => saveWorkers.mutate()}
+            >
+              {saveWorkers.isPending ? "Shranjujem..." : "Shrani"}
+            </button>
+            <button className="btn-secondary" onClick={() => setEditing(false)}>
+              Prekliči
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="section panel">
         <h3 className="panel-title">
           <span className="pt-ic"><IconClock size={18} /></span>
           Evidenca ur
@@ -142,7 +236,7 @@ export default function ManagerOrder() {
         {o.timeEntries.map((e) => (
           <div key={e.id} className="entry-row">
             <span>
-              {new Date(e.startedAt).toLocaleDateString("sl-SI", { day: "numeric", month: "numeric" })}
+              {e.user?.name}, {new Date(e.startedAt).toLocaleDateString("sl-SI", { day: "numeric", month: "numeric" })}
               , {formatTime(e.startedAt)} do {e.endedAt ? formatTime(e.endedAt) : "poteka"}
             </span>
             <b>{e.endedAt ? hoursOf(e.startedAt, e.endedAt).toFixed(2) + " h" : ""}</b>
@@ -169,7 +263,7 @@ export default function ManagerOrder() {
               <div key={l.id} className={isProblem ? "log-card problem" : "log-card"}>
                 <div className="log-head">
                   <span>
-                    {isProblem ? "Težava, " : ""}
+                    {l.user?.name}, {isProblem ? "težava, " : ""}
                     {formatTime(l.createdAt)}
                   </span>
                   {l.quantity != null && (
@@ -220,6 +314,20 @@ export default function ManagerOrder() {
       </div>
 
       <h2 className="rep-title">Dnevno poročilo, {dateText}</h2>
+      {o.workers.length > 1 && (
+        <div className="day-chips">
+          {o.workers.map((w) => (
+            <button
+              key={w.id}
+              className={w.id === reportWorkerId ? "on" : ""}
+              aria-pressed={w.id === reportWorkerId}
+              onClick={() => setReportUser(w.id)}
+            >
+              {w.name}
+            </button>
+          ))}
+        </div>
+      )}
       {reportDays.length > 1 && (
         <div className="day-chips">
           {reportDays.map((k) => (
