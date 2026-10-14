@@ -3,11 +3,32 @@ export type PhotoKind = "PRED" | "MED" | "KONCANO" | "PROBLEM";
 
 export type Project = { id: string; name: string; location: string };
 export type Material = { id: string; name: string; usedQty: number | null };
+
+export type TimeEntryEdit = {
+  id: string;
+  reason: string;
+  oldStartedAt: string;
+  oldEndedAt: string | null;
+  newStartedAt: string;
+  newEndedAt: string;
+  createdAt: string;
+  editedBy: { id: string; name: string };
+};
+
 export type TimeEntry = {
   id: string;
   user?: { id: string; name: string };
   startedAt: string;
   endedAt: string | null;
+  edits?: TimeEntryEdit[];
+};
+
+export type OrderNote = {
+  id: string;
+  text: string;
+  resolved: boolean;
+  createdAt: string;
+  author: { id: string; name: string };
 };
 
 export type WorkOrder = {
@@ -47,7 +68,8 @@ export type WorkOrderDetail = WorkOrder & {
   manager: { id: string; name: string };
   timeEntries: TimeEntry[];
   workLogs: WorkLog[];
-  photos: Photo[]
+  photos: Photo[];
+  notes: OrderNote[];
 };
 
 export type ActiveEntry = {
@@ -90,4 +112,15 @@ export type OverviewRow = {
   departure: string | null;
   hours: number | null;
   status: Status;
+};
+
+export type DayReportRow = {
+  userId: string;
+  name: string;
+  status: "OSNUTEK" | "ODDANO";
+  submittedAt: string | null;
+  totalHours: number;
+  orders: number;
+  photos: number;
+  problem: boolean;
 };

@@ -34,3 +34,5 @@ Mobile-first PWA for construction workers (work orders, time tracking, photos, d
 - Work on a branch. Never push to main and never run migrations against the live database.
 - Never read, print or commit .env files or secrets.
 - Do not add features outside Matej's brief. Keep changes small and explain each one briefly.
+
+- Manager can add notes to an order, mark a PROBLEM as resolved (status back to V_DELU), and correct time entries. Every correction is stored in TimeEntryEdit (old and new times, reason, editor).

@@ -7,10 +7,12 @@ import WorkLogForm from "../components/WorkLogForm";
 import MaterialsUsed from "../components/MaterialsUsed";
 import PhotoSection from "../components/PhotoSection";
 import ProblemReport from "../components/ProblemReport";
+import ManagerNotes from "../components/ManagerNotes";
 import { Skeleton } from "../components/States";
 import { IconAlert, IconBack, IconClock, IconHistory, IconPlay, IconStop } from "../components/Icons";
 import { formatTime, plannedText } from "../format";
 import type { ActiveEntry, WorkOrderDetail } from "../types";
+
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -143,6 +145,8 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
+
+        <ManagerNotes notes={order.notes} />
 
       <div className="section">
         <h2 className="project">{order.project.name}</h2>

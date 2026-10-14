@@ -11,6 +11,7 @@ import { logsRouter, materialsRouter } from "./routes/logs";
 import { photosRouter } from "./routes/photos";
 import { overviewRouter, reportsRouter } from "./routes/reports";
 import { usersRouter } from "./routes/admin";
+import { timeEntriesRouter } from "./routes/timeEntries";
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,7 @@ api.use("/workers", workersRouter);
 api.use("/users", usersRouter);
 api.use("/work-orders", workOrdersRouter);
 api.use("/time", timeRouter);
+api.use("/time-entries", timeEntriesRouter);
 api.use("/logs", logsRouter);
 api.use("/materials", materialsRouter);
 api.use("/photos", photosRouter);

@@ -6,6 +6,8 @@ import StatusChip from "../components/StatusChip";
 import ReportView from "../components/ReportView";
 import PhotoImg from "../components/PhotoImg";
 import StatusSteps from "../components/StatusSteps";
+import ManagerNotes from "../components/ManagerNotes";
+import TimeEntryRow from "../components/TimeEntryRow";
 import { Skeleton } from "../components/States";
 import {
   IconAlert,
@@ -40,6 +42,7 @@ export default function ManagerOrder() {
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [reportUser, setReportUser] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
 
   const orderQ = useQuery({
     queryKey: ["order", id],
@@ -50,6 +53,13 @@ export default function ManagerOrder() {
     queryFn: () => api<{ id: string; name: string }[]>("/workers"),
   });
 
+  const refreshOrder = () => {
+    qc.invalidateQueries({ queryKey: ["order", id] });
+    qc.invalidateQueries({ queryKey: ["overview"] });
+    qc.invalidateQueries({ queryKey: ["all-orders"] });
+    qc.invalidateQueries({ queryKey: ["orders"] });
+  };
+
   const saveWorkers = useMutation({
     mutationFn: () =>
       api(`/work-orders/${id}/workers`, {
@@ -58,10 +68,31 @@ export default function ManagerOrder() {
       }),
     onSuccess: () => {
       setEditing(false);
-      qc.invalidateQueries({ queryKey: ["order", id] });
-      qc.invalidateQueries({ queryKey: ["overview"] });
-      qc.invalidateQueries({ queryKey: ["all-orders"] });
-      qc.invalidateQueries({ queryKey: ["orders"] });
+      refreshOrder();
+    },
+  });
+
+  const addNote = useMutation({
+    mutationFn: () =>
+      api(`/work-orders/${id}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ text: noteText.trim() }),
+      }),
+    onSuccess: () => {
+      setNoteText("");
+      refreshOrder();
+    },
+  });
+
+  const resolve = useMutation({
+    mutationFn: () =>
+      api(`/work-orders/${id}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ text: noteText.trim() }),
+      }),
+    onSuccess: () => {
+      setNoteText("");
+      refreshOrder();
     },
   });
 
@@ -123,6 +154,7 @@ export default function ManagerOrder() {
     month: "numeric",
     year: "numeric",
   });
+  const noteError = addNote.error ?? resolve.error;
 
   function startEdit() {
     setSelected(o.workers.map((w) => w.id));
@@ -150,6 +182,44 @@ export default function ManagerOrder() {
           <div>
             <strong>Delavec je prijavil težavo.</strong>
             {lastNote && <div>{lastNote}</div>}
+          </div>
+        </div>
+      )}
+
+      <ManagerNotes notes={o.notes} />
+
+      {o.status !== "ZAKLJUCEN" && (
+        <div className="section panel">
+          <h3 className="panel-title">
+            {o.status === "PROBLEM" ? "Ukrep za težavo" : "Opomba delavcem"}
+          </h3>
+          <div className="note-form">
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder={
+                o.status === "PROBLEM"
+                  ? "Kaj bo narejeno? Npr. vijake dobavimo do 14:00."
+                  : "Sporočilo za delavce na tem nalogu."
+              }
+            />
+            {noteError && <p className="error">{noteError.message}</p>}
+            <button
+              className="btn-secondary"
+              disabled={addNote.isPending || !noteText.trim()}
+              onClick={() => addNote.mutate()}
+            >
+              {addNote.isPending ? "Shranjujem..." : "Shrani opombo"}
+            </button>
+            {o.status === "PROBLEM" && (
+              <button
+                className="btn-primary"
+                disabled={resolve.isPending || !noteText.trim()}
+                onClick={() => resolve.mutate()}
+              >
+                {resolve.isPending ? "Shranjujem..." : "Težava rešena, nadaljuj delo"}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -234,13 +304,7 @@ export default function ManagerOrder() {
         </h3>
         {o.timeEntries.length === 0 && <p className="muted">Delo še ni začeto.</p>}
         {o.timeEntries.map((e) => (
-          <div key={e.id} className="entry-row">
-            <span>
-              {e.user?.name}, {new Date(e.startedAt).toLocaleDateString("sl-SI", { day: "numeric", month: "numeric" })}
-              , {formatTime(e.startedAt)} do {e.endedAt ? formatTime(e.endedAt) : "poteka"}
-            </span>
-            <b>{e.endedAt ? hoursOf(e.startedAt, e.endedAt).toFixed(2) + " h" : ""}</b>
-          </div>
+          <TimeEntryRow key={e.id} entry={e} orderId={o.id} />
         ))}
         {o.timeEntries.length > 0 && (
           <div className="entry-row total">

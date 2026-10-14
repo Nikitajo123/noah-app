@@ -32,17 +32,19 @@ enum ReportStatus {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  name         String
-  email        String        @unique
-  passwordHash String
-  role         Role
+  id            String            @id @default(uuid())
+  name          String
+  email         String            @unique
+  passwordHash  String
+  role          Role
   orderLinks    WorkOrderWorker[]
-  managerOrders WorkOrder[]  @relation("manager")
-  timeEntries  TimeEntry[]
-  workLogs     WorkLog[]
-  photos       Photo[]
-  reports      DailyReport[]
+  managerOrders WorkOrder[]       @relation("manager")
+  timeEntries   TimeEntry[]
+  workLogs      WorkLog[]
+  photos        Photo[]
+  reports       DailyReport[]
+  notes         OrderNote[]       @relation("noteAuthor")
+  timeEdits     TimeEntryEdit[]   @relation("entryEditor")
 }
 
 model Project {
@@ -53,24 +55,25 @@ model Project {
 }
 
 model WorkOrder {
-  id           String      @id @default(uuid())
-  number       String      @unique
+  id           String            @id @default(uuid())
+  number       String            @unique
   projectId    String
-  project      Project     @relation(fields: [projectId], references: [id])
+  project      Project           @relation(fields: [projectId], references: [id])
   workers      WorkOrderWorker[]
   managerId    String
-  manager      User        @relation("manager", fields: [managerId], references: [id])
+  manager      User              @relation("manager", fields: [managerId], references: [id])
   description  String
   plannedQty   Float?
   plannedUnit  String?
   plannedHours Float?
   dueDate      DateTime
-  workDate     DateTime    @default(now())
-  status       OrderStatus @default(NOV)
+  workDate     DateTime          @default(now())
+  status       OrderStatus       @default(NOV)
   materials    Material[]
   timeEntries  TimeEntry[]
   workLogs     WorkLog[]
   photos       Photo[]
+  notes        OrderNote[]
 }
 
 model Material {
@@ -82,13 +85,14 @@ model Material {
 }
 
 model TimeEntry {
-  id          String    @id @default(uuid())
+  id          String          @id @default(uuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
   workOrderId String
-  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  workOrder   WorkOrder       @relation(fields: [workOrderId], references: [id])
   startedAt   DateTime
   endedAt     DateTime?
+  edits       TimeEntryEdit[]
 }
 
 model WorkLog {
@@ -105,11 +109,11 @@ model WorkLog {
 }
 
 model Photo {
-  id          String    @id @default(uuid())
+  id          String     @id @default(uuid())
   workOrderId String
-  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  workOrder   WorkOrder  @relation(fields: [workOrderId], references: [id])
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
   kind        PhotoKind
   path        String
   takenAt     DateTime
@@ -141,4 +145,29 @@ model WorkOrderWorker {
   user        User      @relation(fields: [userId], references: [id])
 
   @@id([workOrderId, userId])
+}
+
+model OrderNote {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation("noteAuthor", fields: [authorId], references: [id])
+  text        String
+  resolved    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model TimeEntryEdit {
+  id           String    @id @default(uuid())
+  timeEntryId  String
+  timeEntry    TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  editedById   String
+  editedBy     User      @relation("entryEditor", fields: [editedById], references: [id])
+  reason       String
+  oldStartedAt DateTime
+  oldEndedAt   DateTime?
+  newStartedAt DateTime
+  newEndedAt   DateTime
+  createdAt    DateTime  @default(now())
 }

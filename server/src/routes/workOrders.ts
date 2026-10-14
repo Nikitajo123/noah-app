@@ -70,10 +70,14 @@ workOrdersRouter.get("/:id", async (req, res) => {
       timeEntries: {
         where: isWorker ? { userId: req.user!.id } : {},
         orderBy: { startedAt: "asc" },
-        include: { user: person },
+        include: {
+          user: person,
+          edits: { orderBy: { createdAt: "asc" }, include: { editedBy: person } },
+        },
       },
       workLogs: { orderBy: { createdAt: "asc" }, include: { user: person } },
       photos: { orderBy: { takenAt: "asc" } },
+      notes: { orderBy: { createdAt: "asc" }, include: { author: person } },
     },
   });
   if (!order) return res.status(404).json({ error: "Naloga ni" });
@@ -178,6 +182,38 @@ workOrdersRouter.put("/:id/workers", requireRole("VODJA"), async (req, res) => {
 
   const updated = await prisma.workOrder.findUnique({ where: { id }, include: listInclude });
   res.json(shape(updated!));
+});
+
+const noteSchema = z.object({ text: z.string().trim().min(1).max(1000) });
+
+workOrdersRouter.post("/:id/notes", requireRole("VODJA"), async (req, res) => {
+  const parsed = noteSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Vnesi besedilo" });
+  const id = req.params.id as string;
+  const order = await prisma.workOrder.findUnique({ where: { id } });
+  if (!order) return res.status(404).json({ error: "Naloga ni" });
+  const note = await prisma.orderNote.create({
+    data: { workOrderId: id, authorId: req.user!.id, text: parsed.data.text },
+  });
+  res.status(201).json(note);
+});
+
+workOrdersRouter.post("/:id/resolve", requireRole("VODJA"), async (req, res) => {
+  const parsed = noteSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Vnesi, kako je bila težava rešena" });
+  const id = req.params.id as string;
+  const order = await prisma.workOrder.findUnique({ where: { id } });
+  if (!order) return res.status(404).json({ error: "Naloga ni" });
+  if (order.status !== "PROBLEM") {
+    return res.status(400).json({ error: "Naloga nima prijavljene težave" });
+  }
+  await prisma.$transaction([
+    prisma.orderNote.create({
+      data: { workOrderId: id, authorId: req.user!.id, text: parsed.data.text, resolved: true },
+    }),
+    prisma.workOrder.update({ where: { id }, data: { status: "V_DELU" } }),
+  ]);
+  res.json({ ok: true });
 });
 
 workOrdersRouter.delete("/:id", requireRole("VODJA"), async (req, res) => {
