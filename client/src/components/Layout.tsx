@@ -1,12 +1,13 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { IconReport, IconTasks, IconUser } from "./Icons";
 
 const tabClass = ({ isActive }: { isActive: boolean }) => (isActive ? "tab active" : "tab");
 
 export default function Layout() {
+  const { pathname } = useLocation();
   return (
     <div className="shell">
-      <main className="shell-main">
+      <main key={pathname} className="shell-main page-in">
         <Outlet />
       </main>
       <nav className="tabs">

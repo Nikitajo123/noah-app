@@ -1,15 +1,15 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { IconManage, IconOverview, IconProjects, IconReport, IconUser } from "./Icons";
 
 const cls = ({ isActive }: { isActive: boolean }) => (isActive ? "mtab active" : "mtab");
 
 export default function ManagerLayout() {
+  const { pathname } = useLocation();
   return (
     <div className="mshell">
       <aside className="mside">
         <div className="mlogo">
-          <span className="mark" aria-hidden="true" />
-          NOAH
+          <img src="/noah-logo-light.png" alt="NOAH Houses" />
         </div>
         <nav>
           <NavLink to="/" end className={cls}>
@@ -34,7 +34,7 @@ export default function ManagerLayout() {
           </NavLink>
         </nav>
       </aside>
-      <main className="mmain">
+      <main key={pathname} className="mmain page-in">
         <Outlet />
       </main>
     </div>

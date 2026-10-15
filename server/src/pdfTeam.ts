@@ -39,7 +39,7 @@ export type TeamPdfReport = {
 };
 
 const INK = "#000000";
-const ACC = "#F7A600";
+const ACC = "#C1A050";
 const MUTE = "#6E6C66";
 const LINE = "#DEDCD6";
 const FOG = "#F3F2EF";
