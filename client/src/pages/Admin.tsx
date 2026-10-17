@@ -180,7 +180,7 @@ function OrdersList() {
   });
 
   return (
-    <div>
+    <div className="adm-orders">
       {q.isLoading && <Skeleton rows={3} variant="line" />}
       {q.data?.length === 0 && <EmptyState>Ni nalogov.</EmptyState>}
       {del.error && <p className="error">{del.error.message}</p>}
@@ -337,6 +337,7 @@ function UserForm() {
           {create.isPending ? "Ustvarjam..." : "Ustvari uporabnika"}
         </button>
       </form>
+      <div className="adm-list">
       <h3>Uporabniki</h3>
       {users.data?.map((u) => (
         <div key={u.id} className="arow">
@@ -349,6 +350,7 @@ function UserForm() {
           <ResetPassword userId={u.id} name={u.name} />
         </div>
       ))}
+      </div>
     </>
   );
 }
@@ -364,7 +366,7 @@ export default function Admin() {
   ];
 
   return (
-    <>
+    <div className="pg">
       <header className="top">
         <h1>Upravljanje</h1>
         <p>Ustvari naloge, projekte in uporabnike</p>
@@ -381,13 +383,21 @@ export default function Admin() {
           </button>
         ))}
       </div>
-      <div className="admin">
+      <div className={`admin tab-${tab}`}>
         {tab === "order" && <OrderForm />}
         {tab === "orders" && <OrdersList />}
         {tab === "project" && <ProjectForm />}
         {tab === "user" && <UserForm />}
         {tab === "teams" && <TeamsAdmin />}
+        {(tab === "order" || tab === "project") && (
+          <figure className="adm-photo" aria-hidden="true">
+            <img
+              src={tab === "order" ? "/photos/house-render-b-1600.webp" : "/photos/house-real-1600.webp"}
+              alt=""
+            />
+          </figure>
+        )}
       </div>
-    </>
+    </div>
   );
 }

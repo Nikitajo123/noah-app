@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../auth";
 import { useMedia } from "../useMedia";
 
@@ -40,12 +40,47 @@ function PhoneHero() {
 }
 
 function DesktopArt() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let tx = 0;
+    let ty = 0;
+    let x = 0;
+    let y = 0;
+    let raf = 0;
+    const tick = () => {
+      x += (tx - x) * 0.06;
+      y += (ty - y) * 0.06;
+      el.style.setProperty("--mx", x.toFixed(4));
+      el.style.setProperty("--my", y.toFixed(4));
+      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.001 ? requestAnimationFrame(tick) : 0;
+    };
+    const move = (e: MouseEvent) => {
+      tx = (e.clientX / window.innerWidth) * 2 - 1;
+      ty = (e.clientY / window.innerHeight) * 2 - 1;
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener("mousemove", move);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
-    <div className="login-art" aria-hidden="true">
+    <div className="login-art" ref={ref} aria-hidden="true">
       <img className="art-logo" src="/noah-logo-dark.png" alt="" />
-      <img className="a1" {...img("house-real")} sizes="30vw" alt="" />
-      <img className="a2" {...img("house-render-b")} sizes="30vw" alt="" />
-      <img className="a3" {...img("house-render-a")} sizes="28vw" alt="" />
+      <figure className="a1">
+        <img {...img("house-real")} sizes="45vw" alt="" />
+      </figure>
+      <figure className="a2">
+        <img {...img("house-render-b")} sizes="30vw" alt="" />
+      </figure>
+      <figure className="a3">
+        <img {...img("house-render-a")} sizes="25vw" alt="" />
+      </figure>
       <p className="art-meta">
         <span>MB</span>
         <span>

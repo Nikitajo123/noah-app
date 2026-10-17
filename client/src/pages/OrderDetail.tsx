@@ -125,7 +125,7 @@ export default function OrderDetail() {
   }
 
   return (
-    <>
+    <div className="od">
       <div className="detail-top">
         <Link to="/" className="back" aria-label="Nazaj">
           <IconBack />
@@ -316,6 +316,6 @@ export default function OrderDetail() {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }

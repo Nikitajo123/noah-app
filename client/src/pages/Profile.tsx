@@ -72,7 +72,7 @@ export default function Profile() {
     .slice(0, 2)
     .toUpperCase();
   return (
-    <div className="page profile">
+    <div className="page profile pg">
       <div className="profile-card">
         <span className="avatar" aria-hidden="true">
           {initials}

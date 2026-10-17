@@ -119,6 +119,7 @@ export default function TeamsAdmin() {
         )}
       </form>
 
+      <div className="adm-list">
       <h3>Ekipe</h3>
       {teams.isLoading && <Skeleton rows={2} variant="line" />}
       {teams.data?.length === 0 && <EmptyState>Ni ekip.</EmptyState>}
@@ -149,6 +150,7 @@ export default function TeamsAdmin() {
           </button>
         </div>
       ))}
+      </div>
     </>
   );
 }

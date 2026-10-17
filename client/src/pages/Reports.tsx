@@ -268,7 +268,7 @@ function ByProjects() {
 export default function Reports() {
   const [tab, setTab] = useState<"teams" | "projects">("teams");
   return (
-    <>
+    <div className="pg">
       <header className="top">
         <h1>Poročila</h1>
         <p>Poročila ekip in ure po projektih</p>
@@ -282,6 +282,6 @@ export default function Reports() {
         </button>
       </div>
       {tab === "teams" ? <ByTeams /> : <ByProjects />}
-    </>
+    </div>
   );
 }

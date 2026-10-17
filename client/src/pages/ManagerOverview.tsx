@@ -5,6 +5,7 @@ import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import { STATUS_LABEL, formatHours, formatTime } from "../format";
 import { EmptyState, Skeleton } from "../components/States";
+import SearchBox, { matchesQuery } from "../components/SearchBox";
 import { IconAlert, IconClock, IconWorkers } from "../components/Icons";
 import type { OverviewRow, Project, Status } from "../types";
 
@@ -14,6 +15,7 @@ export default function ManagerOverview() {
   const [date, setDate] = useState(todayKey());
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState<"" | Status>("");
+  const [query, setQuery] = useState("");
 
   const projects = useQuery({
     queryKey: ["projects"],
@@ -26,10 +28,13 @@ export default function ManagerOverview() {
     refetchInterval: 30000,
   });
 
-  const rows = (q.data ?? []).filter((r) => !status || r.status === status);
-  const working = rows.filter((r) => r.arrival && !r.departure).length;
-  const hours = rows.reduce((s, r) => s + (r.hours ?? 0), 0);
-  const problems = rows.filter((r) => r.status === "PROBLEM").length;
+  const base = (q.data ?? []).filter((r) => !status || r.status === status);
+  const rows = base.filter((r) =>
+    matchesQuery(query, r.worker.name, r.project.name, r.project.location, r.number)
+  );
+  const working = base.filter((r) => r.arrival && !r.departure).length;
+  const hours = base.reduce((s, r) => s + (r.hours ?? 0), 0);
+  const problems = base.filter((r) => r.status === "PROBLEM").length;
 
   const arrival = (r: OverviewRow) => (r.arrival ? formatTime(r.arrival) : "-");
   const departure = (r: OverviewRow) =>
@@ -38,13 +43,19 @@ export default function ManagerOverview() {
   const link = (r: OverviewRow) => `/nalog/${r.workOrderId}?date=${date}`;
 
   return (
-    <>
+    <div className="pg">
       <header className="top">
         <h1>Pregled dela</h1>
         <p>Stanje na objektih</p>
       </header>
 
       <div className="filters">
+        <SearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Išči po delavcu, projektu ali nalogu"
+          label="Iskanje v pregledu"
+        />
         <input
           type="date"
           value={date}
@@ -96,7 +107,8 @@ export default function ManagerOverview() {
           {q.error.message}
         </p>
       )}
-      {q.data && rows.length === 0 && <EmptyState>Ni nalogov za ta dan.</EmptyState>}
+      {q.data && base.length === 0 && <EmptyState>Ni nalogov za ta dan.</EmptyState>}
+      {base.length > 0 && rows.length === 0 && <EmptyState>Ni zadetkov.</EmptyState>}
 
       {rows.length > 0 && (
         <div className="otable">
@@ -141,6 +153,6 @@ export default function ManagerOverview() {
           </Link>
         ))}
       </div>
-    </>
+    </div>
   );
 }

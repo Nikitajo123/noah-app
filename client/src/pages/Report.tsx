@@ -228,7 +228,7 @@ export default function Report() {
   const view = my?.team ? mode : "mine";
 
   return (
-    <>
+    <div className="pg">
       <header className="top">
         <h1>{view === "team" ? "Poročilo ekipe" : "Dnevno poročilo"}</h1>
         <div className="date-nav">
@@ -279,6 +279,6 @@ export default function Report() {
       ) : (
         <PersonalPanel date={date} />
       )}
-    </>
+    </div>
   );
 }

@@ -16,11 +16,14 @@ export default function ProjectsList() {
   });
 
   return (
-    <>
+    <div className="pg">
       <header className="top">
         <h1>Projekti</h1>
         <p>Objekti in delovni nalogi</p>
       </header>
+      <figure className="pj-photo" aria-hidden="true">
+        <img src="/photos/house-real-1600.webp" alt="" />
+      </figure>
       <div className="list">
         {(projects.isLoading || orders.isLoading) && <Skeleton rows={3} />}
         {projects.error && <p className="error" role="alert">{projects.error.message}</p>}
@@ -29,7 +32,7 @@ export default function ProjectsList() {
           return (
             <section key={p.id} className="group">
               <p className="group-title">
-                {p.name}, {p.location} ({list.length})
+                <span className="gt-name">{p.name}</span>, {p.location} ({list.length})
               </p>
               {list.length === 0 && <p className="muted group-empty">Ni nalogov.</p>}
               {list.map((o) => (
@@ -46,6 +49,6 @@ export default function ProjectsList() {
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
