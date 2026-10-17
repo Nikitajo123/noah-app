@@ -15,6 +15,7 @@ import { timeEntriesRouter } from "./routes/timeEntries";
 import { teamsRouter, teamReportsRouter, projectHoursRouter } from "./routes/teams";
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
 
