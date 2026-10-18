@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { compressImage } from "../image";
 import { IconAlert, IconCamera, IconCheck } from "./Icons";
+import VoiceButton from "./VoiceButton";
 
 export default function ProblemReport({ orderId }: { orderId: string }) {
   const qc = useQueryClient();
@@ -68,6 +69,7 @@ export default function ProblemReport({ orderId }: { orderId: string }) {
           autoFocus
         />
       </label>
+      <VoiceButton value={note} onChange={setNote} />
       <label className={file ? "tile wide added" : "tile wide"}>
         {file ? <IconCheck size={26} /> : <IconCamera size={26} />}
         {file ? "Fotografija dodana" : "Dodaj fotografijo problema"}

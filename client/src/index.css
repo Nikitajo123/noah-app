@@ -1799,3 +1799,8 @@ h1, h2, h3 { letter-spacing: -0.03em; }
   .pg > .search { max-width: 640px; margin-right: auto; }
 }
 .pg .filters .search input { min-height: 56px; padding: 0 52px 0 54px; border-radius: 28px; font-size: 17px; font-weight: 400; }
+
+.voice-btn.busy { opacity: 0.85; cursor: default; }
+.voice-btn .spinner.sm { border-color: rgba(255, 255, 255, 0.25); border-top-color: var(--acc); }
+.voice-time { font-variant-numeric: tabular-nums; }
+.problem-box .voice-row { margin: 0; }
