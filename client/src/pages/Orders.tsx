@@ -12,15 +12,23 @@ import type { WorkOrder } from "../types";
 export default function Orders() {
   const [tab, setTab] = useState<"open" | "done">("open");
   const [query, setQuery] = useState("");
+  const [project, setProject] = useState("");
   const { data, isLoading, error } = useQuery({
     queryKey: ["orders", tab],
     queryFn: () =>
       api<WorkOrder[]>(`/work-orders?status=${tab === "open" ? "open" : "ZAKLJUCEN"}`),
   });
 
+  const projects = new Map<string, string>();
+  for (const o of data ?? []) projects.set(o.project.id, o.project.name);
+  // a selected object that has no orders in this tab behaves like "Vsi"
+  const activeProject = projects.has(project) ? project : "";
+
   const groups = new Map<string, { name: string; location: string; orders: WorkOrder[] }>();
-  const found = (data ?? []).filter((o) =>
-    matchesQuery(query, o.number, o.project.name, o.project.location, o.description)
+  const found = (data ?? []).filter(
+    (o) =>
+      (!activeProject || o.project.id === activeProject) &&
+      matchesQuery(query, o.number, o.project.name, o.project.location, o.description)
   );
   for (const o of found) {
     const g = groups.get(o.project.id) ?? {
@@ -59,6 +67,27 @@ export default function Orders() {
         placeholder="Išči po nalogih"
         label="Iskanje nalogov"
       />
+      {projects.size > 1 && (
+        <div className="objchips" role="group" aria-label="Filter po objektu">
+          <button
+            className={activeProject === "" ? "on" : ""}
+            aria-pressed={activeProject === ""}
+            onClick={() => setProject("")}
+          >
+            Vsi
+          </button>
+          {[...projects.entries()].map(([id, name]) => (
+            <button
+              key={id}
+              className={activeProject === id ? "on" : ""}
+              aria-pressed={activeProject === id}
+              onClick={() => setProject(id)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="list">
         {isLoading && <Skeleton rows={3} />}
         {error && <p className="error" role="alert">{error.message}</p>}

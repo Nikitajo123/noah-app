@@ -1800,6 +1800,37 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 }
 .pg .filters .search input { min-height: 56px; padding: 0 52px 0 54px; border-radius: 28px; font-size: 17px; font-weight: 400; }
 
+/* object filter pills (worker order list) */
+.objchips {
+  display: flex;
+  gap: var(--s3, 10px);
+  margin: 0 0 var(--s5);
+  padding: 4px var(--gx) 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.objchips::-webkit-scrollbar { display: none; }
+.objchips button {
+  flex: none;
+  min-height: 46px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow: var(--card-sh);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 220ms var(--ease), color 220ms var(--ease);
+}
+.objchips button.on { background: var(--ink); color: var(--paper); font-weight: 600; }
+.objchips button:active { transform: scale(0.96); }
+.objchips button:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+
 .voice-btn.busy { opacity: 0.85; cursor: default; }
 .voice-btn .spinner.sm { border-color: rgba(255, 255, 255, 0.25); border-top-color: var(--acc); }
 .voice-time { font-variant-numeric: tabular-nums; }
