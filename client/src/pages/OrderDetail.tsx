@@ -40,11 +40,15 @@ export default function OrderDetail() {
   });
   const startWork = useMutation({
     mutationFn: () =>
-      api("/time/start", { method: "POST", body: JSON.stringify({ workOrderId: id }) }),
+      api("/time/start", {
+        method: "POST",
+        body: JSON.stringify({ workOrderId: id, at: new Date().toISOString() }),
+      }),
     onSuccess: refresh,
   });
   const endWork = useMutation({
-    mutationFn: () => api("/time/end", { method: "POST", body: "{}" }),
+    mutationFn: () =>
+      api("/time/end", { method: "POST", body: JSON.stringify({ at: new Date().toISOString() }) }),
     onSuccess: refresh,
   });
 
