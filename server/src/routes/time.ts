@@ -38,10 +38,17 @@ timeRouter.post("/start", async (req, res) => {
   const open = await prisma.timeEntry.findFirst({ where: { userId, endedAt: null } });
   if (open) return res.status(409).json({ error: "Delo že poteka" });
 
-  const entry = await prisma.timeEntry.create({
-    data: { ...(id ? { id } : {}), userId, workOrderId, startedAt: at ?? new Date() },
-  });
-  res.status(201).json(entry);
+  try {
+    const entry = await prisma.timeEntry.create({
+      data: { ...(id ? { id } : {}), userId, workOrderId, startedAt: at ?? new Date() },
+    });
+    res.status(201).json(entry);
+  } catch (e) {
+    if ((e as { code?: string }).code === "P2002") {
+      return res.status(409).json({ error: "Delo že poteka" });
+    }
+    throw e;
+  }
 });
 
 const endSchema = z.object({ at: z.coerce.date().optional() });
