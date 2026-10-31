@@ -1,0 +1,12 @@
+name: keep-alive
+on:
+  schedule:
+    - cron: "55 5 * * *"
+    - cron: "5,15,25,35,45,55 6-13 * * *"
+    - cron: "5,15,25,35,45 14 * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 60 https://noah-app-rlm8.onrender.com/health
