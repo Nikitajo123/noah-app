@@ -1,9 +1,9 @@
 name: keep-alive
 on:
   schedule:
-    - cron: "55 5 * * *"
-    - cron: "5,15,25,35,45,55 6-13 * * *"
-    - cron: "5,15,25,35,45 14 * * *"
+    - cron: "55 5 * * 1-5"
+    - cron: "5,15,25,35,45,55 6-13 * * 1-5"
+    - cron: "5,15,25,35,45 14 * * 1-5"
   workflow_dispatch:
 jobs:
   ping:
