@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, setToken, getToken } from "./api";
+import type { Role } from "./types";
 
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: "DELAVEC" | "VODJA";
+  role: Role;
 };
 
 type AuthState = {

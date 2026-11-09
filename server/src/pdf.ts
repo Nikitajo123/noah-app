@@ -14,6 +14,8 @@ export type PdfReport = {
     arrival: Date | null;
     departure: Date | null;
     hours: number;
+    noHours?: boolean;
+    dayStatus?: { done: boolean; note: string | null } | null;
     logs: { description: string; quantity: number | null; unit: string | null; note: string | null }[];
     materials: { name: string; usedQty: number | null }[];
     problems: (string | null)[];
@@ -134,7 +136,7 @@ export function streamReportPdf(
     const times: [string, string][] = [
       ["Prihod", o.arrival ? hhmm(o.arrival) : "-"],
       ["Odhod", o.departure ? hhmm(o.departure) : o.arrival ? "še poteka" : "-"],
-      ["Ure", hoursText(o.hours)],
+      ["Ure", o.noHours ? "brez ur" : hoursText(o.hours)],
     ];
     times.forEach(([label, value], i) => {
       const x = M + i * (W / 3);
@@ -159,6 +161,12 @@ export function streamReportPdf(
       doc.text(s, M, doc.y, { width: W });
       doc.y += 4;
     };
+
+    if (o.dayStatus) {
+      heading(`Stanje: ${o.dayStatus.done ? "narejeno" : "ni narejeno"}`);
+      if (o.dayStatus.note) line(o.dayStatus.note);
+      doc.y += 8;
+    }
 
     heading("Opravljeno delo");
     const work = o.logs.filter((l) => l.description !== "Prijavljena težava");

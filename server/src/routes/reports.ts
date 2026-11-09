@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { streamReportPdf } from "../pdf";
+import { assignedProjectIds, inProjects, isManagerRole, requireManager } from "../permissions";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const hoursOf = (start: Date, end: Date) => (end.getTime() - start.getTime()) / 3600000;
@@ -20,7 +21,7 @@ function dayInfo(date?: string) {
 // ---------- Pregled za vodjo ----------
 
 export const overviewRouter = Router();
-overviewRouter.use(requireAuth, requireRole("VODJA"));
+overviewRouter.use(requireAuth, requireManager);
 
 const overviewQuery = z.object({
   date: z.string().regex(dateRe).optional(),
@@ -33,9 +34,11 @@ overviewRouter.get("/", async (req, res) => {
   const { start, end } = dayInfo(q.data.date);
   const day = { gte: start, lt: end };
 
+  const scope = await assignedProjectIds(req.user!);
   const orders = await prisma.workOrder.findMany({
     where: {
-      ...(q.data.projectId ? { projectId: q.data.projectId } : {}),
+      ...inProjects(scope),
+      ...(q.data.projectId ? { AND: [{ projectId: q.data.projectId }] } : {}),
       OR: [
         { timeEntries: { some: { startedAt: day } } },
         { dueDate: day },
@@ -76,7 +79,8 @@ overviewRouter.get("/", async (req, res) => {
 
 // ---------- Dnevno poročilo ----------
 
-export async function buildReport(userId: string, date?: string) {
+// scope: gradbišča the viewer may see (null = all).
+export async function buildReport(userId: string, date?: string, scope: string[] | null = null) {
   const { key, start, end, reportDate } = dayInfo(date);
   const day = { gte: start, lt: end };
 
@@ -88,15 +92,18 @@ export async function buildReport(userId: string, date?: string) {
 
   const orders = await prisma.workOrder.findMany({
     where: {
+      ...inProjects(scope),
       workers: { some: { userId } },
       OR: [
         { timeEntries: { some: { userId, startedAt: day } } },
         { workLogs: { some: { userId, createdAt: day } } },
         { photos: { some: { userId, takenAt: day } } },
+        { dayStatuses: { some: { userId, date: reportDate } } },
       ],
     },
     include: {
       project: true,
+      dayStatuses: { where: { userId, date: reportDate } },
       materials: { orderBy: { name: "asc" } },
       timeEntries: { where: { userId, startedAt: day }, orderBy: { startedAt: "asc" } },
       workLogs: { where: { userId, createdAt: day }, orderBy: { createdAt: "asc" } },
@@ -125,6 +132,10 @@ export async function buildReport(userId: string, date?: string) {
       arrival: entries[0]?.startedAt ?? null,
       departure: running ? null : entries[entries.length - 1]?.endedAt ?? null,
       hours: r2(hours),
+      noHours: entries.length === 0,
+      dayStatus: o.dayStatuses[0]
+        ? { done: o.dayStatuses[0].done, note: o.dayStatuses[0].note }
+        : null,
       logs: o.workLogs.map((l) => ({
         description: l.description,
         quantity: l.quantity,
@@ -160,16 +171,18 @@ reportsRouter.get("/", async (req, res) => {
   if (!q.success) return res.status(400).json({ error: "Napačen filter" });
 
   let userId = req.user!.id;
-  if (req.user!.role === "VODJA") {
+  let scope: string[] | null = null;
+  if (isManagerRole(req.user!)) {
     if (!q.data.userId) return res.status(400).json({ error: "Manjka delavec" });
     userId = q.data.userId;
+    scope = await assignedProjectIds(req.user!);
   }
-  const report = await buildReport(userId, q.data.date);
+  const report = await buildReport(userId, q.data.date, scope);
   if (!report) return res.status(404).json({ error: "Delavca ni" });
   res.json(report);
 });
 
-reportsRouter.get("/day", requireRole("VODJA"), async (req, res) => {
+reportsRouter.get("/day", requireManager, async (req, res) => {
   const q = z.object({ date: z.string().regex(dateRe).optional() }).safeParse(req.query);
   if (!q.success) return res.status(400).json({ error: "Napačen datum" });
   const { start, end, reportDate } = dayInfo(q.data.date);
@@ -182,11 +195,12 @@ reportsRouter.get("/day", requireRole("VODJA"), async (req, res) => {
     prisma.dailyReport.findMany({ where: { date: reportDate }, select: { userId: true } }),
   ]);
   const ids = new Set([...te, ...wl, ...ph, ...saved].map((r) => r.userId));
+  const scope = await assignedProjectIds(req.user!);
 
   const rows = [];
   for (const userId of ids) {
-    const r = await buildReport(userId, q.data.date);
-    if (!r || (r.orders.length === 0 && r.status !== "ODDANO")) continue;
+    const r = await buildReport(userId, q.data.date, scope);
+    if (!r || (r.orders.length === 0 && (r.status !== "ODDANO" || scope !== null))) continue;
     rows.push({
       userId,
       name: r.worker.name,
@@ -207,11 +221,13 @@ reportsRouter.get("/pdf", async (req, res) => {
   if (!q.success) return res.status(400).json({ error: "Napačen filter" });
 
   let userId = req.user!.id;
-  if (req.user!.role === "VODJA") {
+  let scope: string[] | null = null;
+  if (isManagerRole(req.user!)) {
     if (!q.data.userId) return res.status(400).json({ error: "Manjka delavec" });
     userId = q.data.userId;
+    scope = await assignedProjectIds(req.user!);
   }
-  const report = await buildReport(userId, q.data.date);
+  const report = await buildReport(userId, q.data.date, scope);
   if (!report) return res.status(404).json({ error: "Delavca ni" });
 
   res.setHeader("Content-Type", "application/pdf");

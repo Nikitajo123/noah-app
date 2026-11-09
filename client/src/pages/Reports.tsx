@@ -213,7 +213,7 @@ function ByProjects() {
           <b>{formatHours(data?.totalHours ?? 0)}</b>
         </div>
         <div className="kpi">
-          <small>Projekti z delom</small>
+          <small>Gradbišča z delom</small>
           <b>{data?.projects.length ?? 0}</b>
         </div>
       </div>
@@ -271,14 +271,14 @@ export default function Reports() {
     <div className="pg">
       <header className="top">
         <h1>Poročila</h1>
-        <p>Poročila ekip in ure po projektih</p>
+        <p>Poročila ekip in ure po gradbiščih</p>
       </header>
       <div className="seg">
         <button className={tab === "teams" ? "on" : ""} onClick={() => setTab("teams")}>
           Po ekipah
         </button>
         <button className={tab === "projects" ? "on" : ""} onClick={() => setTab("projects")}>
-          Ure po projektih
+          Ure po gradbiščih
         </button>
       </div>
       {tab === "teams" ? <ByTeams /> : <ByProjects />}

@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { formatTime } from "../format";
 import { compressImage } from "../image";
@@ -6,85 +7,169 @@ import PhotoImg from "./PhotoImg";
 import { IconCamera } from "./Icons";
 import type { Photo, PhotoKind } from "../types";
 
-const KINDS: { kind: PhotoKind; label: string }[] = [
-  { kind: "PRED", label: "Pred" },
-  { kind: "MED", label: "Med delom" },
-  { kind: "KONCANO", label: "Končano" },
-  { kind: "PROBLEM", label: "Problem" },
-];
+const KIND_LABEL: Record<PhotoKind, string> = {
+  PRED: "Pred",
+  MED: "Med delom",
+  KONCANO: "Končano",
+  PROBLEM: "Problem",
+};
 
+const PARALLEL = 3;
+
+type Item = {
+  id: string;
+  file: File;
+  preview: string;
+  state: "wait" | "up" | "done" | "err";
+  error?: string;
+};
+
+// Photos upload as soon as they are picked. Each one has its own id, so a retry never duplicates it.
+// compact: no panel and no saved photos, used inside the DA step. onUploaded runs after each upload.
 export default function PhotoSection({
   orderId,
   photos,
-  allowed,
+  kind,
+  compact = false,
+  onUploaded,
 }: {
   orderId: string;
   photos: Photo[];
-  allowed: Record<PhotoKind, boolean>;
+  kind: PhotoKind;
+  compact?: boolean;
+  onUploaded?: () => void;
 }) {
   const qc = useQueryClient();
-  const upload = useMutation({
-    mutationFn: async ({ kind, file }: { kind: PhotoKind; file: File }) => {
-      const small = await compressImage(file);
+  const [items, setItems] = useState<Item[]>([]);
+  const started = useRef(new Set<string>());
+  const previews = useRef<string[]>([]);
+
+  useEffect(
+    () => () => {
+      previews.current.forEach((u) => URL.revokeObjectURL(u));
+    },
+    []
+  );
+
+  const patch = (id: string, change: Partial<Item>) =>
+    setItems((cur) => cur.map((i) => (i.id === id ? { ...i, ...change } : i)));
+
+  async function upload(item: Item) {
+    try {
+      const small = await compressImage(item.file);
       const fd = new FormData();
+      fd.append("id", item.id);
       fd.append("workOrderId", orderId);
       fd.append("kind", kind);
       fd.append("takenAt", new Date().toISOString());
       fd.append("photo", small);
-      return api("/photos", { method: "POST", body: fd });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["order", orderId] }),
-  });
+      await api("/photos", { method: "POST", body: fd });
+      patch(item.id, { state: "done" });
+      onUploaded?.();
+      qc.invalidateQueries({ queryKey: ["order", orderId] });
+    } catch (e) {
+      patch(item.id, { state: "err", error: e instanceof Error ? e.message : "Napaka" });
+    }
+  }
 
-  const label = (k: PhotoKind) => KINDS.find((x) => x.kind === k)!.label;
-  const anyAllowed = KINDS.some((k) => allowed[k.kind]);
+  useEffect(() => {
+    const active = items.filter((i) => i.state === "up").length;
+    const next = items
+      .filter((i) => i.state === "wait" && !started.current.has(i.id))
+      .slice(0, Math.max(0, PARALLEL - active));
+    if (next.length === 0) return;
+    next.forEach((n) => started.current.add(n.id));
+    setItems((cur) => cur.map((i) => (next.some((n) => n.id === i.id) ? { ...i, state: "up" } : i)));
+    next.forEach((n) => void upload(n));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  function add(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const fresh: Item[] = [...files].map((file) => {
+      const preview = URL.createObjectURL(file);
+      previews.current.push(preview);
+      return { id: crypto.randomUUID(), file, preview, state: "wait" };
+    });
+    setItems((cur) => [...cur, ...fresh]);
+  }
+
+  function retry(item: Item) {
+    started.current.delete(item.id);
+    patch(item.id, { state: "wait", error: undefined });
+  }
+
+  const uploaded = new Set(items.filter((i) => i.state === "done").map((i) => i.id));
+  const saved = compact ? [] : photos.filter((p) => !items.some((i) => i.id === p.id));
+  const doneCount = uploaded.size;
+  const busy = items.some((i) => i.state === "wait" || i.state === "up");
 
   return (
-    <div className="section panel">
-      <h3 className="panel-title">
-        <span className="pt-ic"><IconCamera size={18} /></span>
-        Fotografije
-      </h3>
-      {anyAllowed && (
-        <>
-          <div className="tiles">
-            {KINDS.map(({ kind, label }) => (
-              <label key={kind} className={allowed[kind] ? "tile" : "tile off"}>
-                <IconCamera size={26} />
-                {label}
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  disabled={!allowed[kind]}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) upload.mutate({ kind, file });
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            ))}
-          </div>
-          <p className="hint">
-            Fotografija Končano se odpre, ko končaš delo. Fotografijo problema dodaš pri prijavi težave.
-          </p>
-        </>
+    <div className={compact ? "ds-photo" : "section panel"}>
+      {!compact && (
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconCamera size={18} /></span>
+          Fotografije
+        </h3>
       )}
-      {upload.isPending && (
-        <p className="muted uploading" role="status">
-          <span className="spinner sm" aria-hidden="true" />
-          Nalagam fotografijo...
+      <div className="photo-btns">
+        <label className="tile wide">
+          <IconCamera size={24} />
+          Izberi fotografije
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            multiple
+            onChange={(e) => {
+              add(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        <label className="tile wide">
+          <IconCamera size={24} />
+          Slikaj
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => {
+              add(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {items.length > 0 && (
+        <p className="photo-count" role="status" aria-live="polite">
+          {doneCount} od {items.length} naloženih
+          {busy ? "..." : ""}
         </p>
       )}
-      {upload.error && <p className="error">{upload.error.message}</p>}
-      {photos.length > 0 && (
+      {(items.length > 0 || saved.length > 0) && (
         <div className="thumbs">
-          {photos.map((p) => (
+          {saved.map((p) => (
             <div key={p.id} className="thumb">
-              <PhotoImg path={p.path} alt={label(p.kind)} />
+              <PhotoImg path={p.path} alt={KIND_LABEL[p.kind]} />
               <small>
-                {label(p.kind)}, {formatTime(p.takenAt)}
+                {KIND_LABEL[p.kind]}, {formatTime(p.takenAt)}
+              </small>
+            </div>
+          ))}
+          {items.map((i) => (
+            <div key={i.id} className={`thumb up-${i.state}`}>
+              <img src={i.preview} alt="Nova fotografija" />
+              <small>
+                {i.state === "done" && "Naloženo"}
+                {(i.state === "wait" || i.state === "up") && "Nalaga se..."}
+                {i.state === "err" && (
+                  <>
+                    <span className="error">Napaka</span>{" "}
+                    <button type="button" className="btn-mini" onClick={() => retry(i)}>
+                      Poskusi znova
+                    </button>
+                  </>
+                )}
               </small>
             </div>
           ))}

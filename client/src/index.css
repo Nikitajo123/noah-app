@@ -1835,3 +1835,114 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .voice-btn .spinner.sm { border-color: rgba(255, 255, 255, 0.25); border-top-color: var(--acc); }
 .voice-time { font-variant-numeric: tabular-nums; }
 .problem-box .voice-row { margin: 0; }
+/* ---------- worker flow: DA / NE, autosave, photo uploads ---------- */
+.yn { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.yn-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 72px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+.yn-btn:active { transform: scale(0.97); }
+.yn-btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+.yn-btn.yes.on { background: var(--acc); border-color: var(--acc); box-shadow: var(--sh-acc); }
+.yn-btn.no.on { background: var(--ink); color: var(--paper); }
+.ds-note { margin-top: var(--s4); }
+.ds-note .field { margin-bottom: var(--s3); }
+.ds-note .field textarea[aria-invalid="true"] { border-color: var(--red); }
+.save-state { min-height: 20px; margin: var(--s2) 0 0; font-size: 14px; font-weight: 600; color: var(--mute); }
+.save-state.error { color: var(--red); }
+.photo-btns { display: grid; gap: var(--s3); }
+.photo-count { margin: var(--s3) 0 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.thumb.up-wait img, .thumb.up-up img { opacity: 0.45; }
+.thumb.up-err img { outline: 2px solid var(--red); outline-offset: -2px; }
+.thumb small .btn-mini { min-height: 32px; padding: 0 var(--s3); font-size: 12px; }
+.small-facts { margin: var(--s3) 0 0; font-size: 13px; line-height: 1.5; color: var(--mute); }
+.dsl-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--fog); font-size: 15px; }
+.dsl-row p { margin: 4px 0 0; font-size: 14px; color: var(--mute); }
+.ds-chip { flex: none; padding: 4px 10px; border-radius: var(--r-pill); font-size: 13px; font-weight: 700; }
+.ds-chip.yes { background: var(--acc); color: var(--ink); }
+.ds-chip.no { background: var(--ink); color: var(--paper); }
+.no-hours { font-weight: 700; color: var(--mute); }
+@media (prefers-reduced-motion: reduce) { .yn-btn:active { transform: none; } }
+
+/* ---------- roles and gradbišča admin ---------- */
+.mlogo { flex-direction: column; align-items: flex-start; }
+.mrole { display: block; margin-top: var(--s2); font-size: 13px; font-weight: 600; color: #bdbbb4; letter-spacing: 0; }
+.pa-row { padding: var(--s4) 0; border-bottom: 1px solid var(--fog); }
+.pa-row:last-child { border-bottom: 0; }
+.pa-head p { margin: 4px 0 0; }
+.pa-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.pa-actions .btn-primary, .pa-actions .btn-secondary { flex: 1 1 140px; }
+.pa-pick { margin-top: var(--s3); }
+.role-select { min-height: 40px; padding: 0 var(--s2); border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--paper); font: inherit; font-size: 13px; }
+
+/* ---------- Uredi nalog ---------- */
+.order-actions { display: grid; gap: var(--s3); margin: var(--s4) 0; }
+@media (min-width: 560px) { .order-actions { grid-template-columns: 1fr 1fr; } .order-actions .error { grid-column: 1 / -1; } }
+.edit-form .btn-primary, .edit-form .btn-secondary { width: 100%; margin-top: var(--s3); }
+.mat-edit { display: flex; gap: var(--s2); align-items: center; margin-bottom: var(--s2); }
+.mat-edit input { flex: 1; min-width: 0; min-height: 44px; padding: 0 var(--s3); border: 1.5px solid var(--line); border-radius: var(--r-sm); font: inherit; }
+.mat-edit input:focus { outline: 3px solid var(--acc); outline-offset: 1px; }
+.checks > .btn-mini { margin: var(--s2) 0; }
+.edit-row { padding: var(--s3) 0; border-bottom: 1px solid var(--fog); }
+.edit-row:last-child { border-bottom: 0; }
+.edit-row p { margin: 4px 0 0; font-size: 15px; }
+
+/* ---------- Dnevni pregled ---------- */
+.dp { padding: 0 var(--s5) var(--s8); }
+.dp-title { margin: var(--s6) 0 var(--s3); font-size: 22px; font-weight: 750; letter-spacing: -0.03em; }
+.dp-sub { margin: calc(var(--s2) * -1) 0 var(--s3); }
+.dp-group { margin-bottom: var(--s3); border-radius: var(--r-lg); background: var(--paper); box-shadow: var(--sh-2); overflow: hidden; }
+.dp-head {
+  display: grid;
+  grid-template-columns: 1fr auto 24px;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dp-head:focus-visible { outline: 3px solid var(--acc); outline-offset: -3px; }
+.dp-name { font-size: 17px; font-weight: 700; }
+.dp-count { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.dp-chev { display: flex; transition: transform 0.15s; }
+.dp-group.open .dp-chev { transform: rotate(90deg); }
+.dp-body { padding: 0 var(--s4) var(--s2); }
+.dp-order { padding: var(--s3) 0; border-top: 1px solid var(--fog); }
+.dp-order-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+.dp-link { font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: var(--acc); text-underline-offset: 3px; }
+.dp-desc { margin: 4px 0 var(--s2); font-size: 15px; line-height: 1.45; }
+.dp-worker { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); padding: var(--s2) 0; }
+.dp-wmain { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dp-note { margin: 4px 0 0; padding: var(--s2) 10px; border-radius: var(--r-sm); background: var(--fog); font-size: 14px; line-height: 1.45; }
+.ds-chip.none { background: var(--fog); color: var(--mute); }
+@media (max-width: 480px) { .dp-head { grid-template-columns: 1fr 24px; } .dp-count { grid-row: 2; grid-column: 1; } }
+@media (prefers-reduced-motion: reduce) { .dp-chev { transition: none; } }
+/* Six manager tabs on a phone: narrower pills, two-line labels allowed. */
+@media (max-width: 899px) {
+  .mside .mtab { font-size: 11px; line-height: 1.15; text-align: center; padding: 0 2px; }
+  .mside .mtab .ic { width: 48px; }
+}
+
+/* DA step: photo of the finished work is required */
+.ds-needs-photo { margin-top: var(--s4); padding: var(--s4); border-radius: var(--r-md); border: 2px solid var(--acc); background: #fff8e6; }
+.ds-needs-photo > p { margin: 0 0 var(--s3); font-size: 15px; line-height: 1.45; }
+.adm-orders .edit-form { margin: 0 0 var(--s3); box-shadow: none; border: 1.5px solid var(--line); }
+.adm-orders .arow { flex-wrap: wrap; }

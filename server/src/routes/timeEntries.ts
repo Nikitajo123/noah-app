@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
-import { requireAuth, requireRole } from "../auth";
+import { requireAuth } from "../auth";
+import { canManageProject, requireManager } from "../permissions";
 
 export const timeEntriesRouter = Router();
-timeEntriesRouter.use(requireAuth, requireRole("VODJA"));
+timeEntriesRouter.use(requireAuth, requireManager);
 
 const editSchema = z.object({
   startedAt: z.coerce.date(),
@@ -20,8 +21,13 @@ timeEntriesRouter.patch("/:id", async (req, res) => {
   const { startedAt, endedAt, reason } = parsed.data;
   const id = req.params.id as string;
 
-  const entry = await prisma.timeEntry.findUnique({ where: { id } });
-  if (!entry) return res.status(404).json({ error: "Evidence ni" });
+  const entry = await prisma.timeEntry.findUnique({
+    where: { id },
+    include: { workOrder: { select: { projectId: true } } },
+  });
+  if (!entry || !(await canManageProject(req.user!, entry.workOrder.projectId))) {
+    return res.status(404).json({ error: "Evidence ni" });
+  }
 
   if (endedAt.getTime() <= startedAt.getTime()) {
     return res.status(400).json({ error: "Konec mora biti po začetku" });

@@ -3,13 +3,12 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
 import StatusSteps from "../components/StatusSteps";
-import WorkLogForm from "../components/WorkLogForm";
-import MaterialsUsed from "../components/MaterialsUsed";
+import DayStatusCard from "../components/DayStatusCard";
 import PhotoSection from "../components/PhotoSection";
 import ProblemReport from "../components/ProblemReport";
 import ManagerNotes from "../components/ManagerNotes";
 import { Skeleton } from "../components/States";
-import { IconAlert, IconBack, IconClock, IconHistory, IconPlay, IconStop } from "../components/Icons";
+import { IconAlert, IconBack, IconClock, IconPlay, IconStop } from "../components/Icons";
 import { formatTime, plannedText } from "../format";
 import type { ActiveEntry, WorkOrderDetail } from "../types";
 
@@ -77,12 +76,7 @@ export default function OrderDetail() {
     .reduce((s, e) => s + hoursOf(e.startedAt, e.endedAt!), 0);
 
   const hasFinishedWork = order.timeEntries.some((e) => e.endedAt);
-  const allowedPhotos = {
-    PRED: order.status !== "ZAKLJUCEN",
-    MED: inProgress,
-    KONCANO: inProgress && !running && hasFinishedWork,
-    PROBLEM: order.status === "PROBLEM",
-  };
+  const closed = order.status === "ZAKLJUCEN";
 
   const problemNote = [...order.workLogs].reverse().find((l) => l.note)?.note;
 
@@ -153,29 +147,25 @@ export default function OrderDetail() {
         <ManagerNotes notes={order.notes} />
 
       <div className="section">
-        <h2 className="project">{order.project.name}</h2>
-        <p className="muted">
-          {order.project.location}, vodja {order.manager.name}
-        </p>
         <p className="desc">{order.description}</p>
+        <p className="muted">
+          {order.project.name}, {order.project.location}
+        </p>
       </div>
 
-      <div className="info-grid">
-        <div className="info">
-          <small>Datum in rok</small>
-          <strong>
-            {new Date(order.workDate).toLocaleDateString("sl-SI")}, rok{" "}
-            {new Date(order.dueDate).toLocaleDateString("sl-SI")}
-          </strong>
+      <div className="section">
+        <div className="kv">
+          <span>Datum</span>
+          <b>{new Date(order.workDate).toLocaleDateString("sl-SI")}</b>
         </div>
-        <div className="info">
-          <small>Planirano</small>
-          <strong>{plannedText(order) || "Ni podatka"}</strong>
+        <div className="kv">
+          <span>Rok</span>
+          <b>{new Date(order.dueDate).toLocaleDateString("sl-SI")}</b>
         </div>
-        <div className="info">
-          <small>Material</small>
-          <strong>{order.materials.map((m) => m.name).join(", ") || "Ni podatka"}</strong>
-        </div>
+        <p className="small-facts">
+          Planirano: {plannedText(order) || "ni podatka"}. Material:{" "}
+          {order.materials.map((m) => m.name).join(", ") || "ni podatka"}.
+        </p>
       </div>
 
       {inProgress && (
@@ -212,46 +202,15 @@ export default function OrderDetail() {
         </div>
       )}
 
-      {inProgress && (
-        <>
-          <WorkLogForm orderId={order.id} />
-          <MaterialsUsed materials={order.materials} orderId={order.id} />
-        </>
-      )}
+      {(inProgress || closed) && <DayStatusCard order={order} running={!!running} />}
 
-      {order.workLogs.length > 0 && (
-        <div className="section panel">
-          <h3 className="panel-title">
-            <span className="pt-ic"><IconHistory size={18} /></span>
-            Vnosi
-          </h3>
-          <div className="logs">
-            {order.workLogs.map((l) => {
-              const isProblem = l.description === "Prijavljena težava";
-              return (
-                <div key={l.id} className={isProblem ? "log-card problem" : "log-card"}>
-                  <div className="log-head">
-                    <span>{isProblem ? "Težava, " : ""}{formatTime(l.createdAt)}</span>
-                    {l.quantity != null && (
-                      <b className="qty">
-                        {l.quantity} {l.unit}
-                      </b>
-                    )}
-                  </div>
-                  {!isProblem && <p>{l.description}</p>}
-                  {l.note && (
-                    <div className="log-note">
-                      {isProblem ? l.note : `Opomba: ${l.note}`}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {(inProgress || closed) && (
+        <PhotoSection
+          orderId={order.id}
+          photos={order.photos}
+          kind={closed ? "KONCANO" : "MED"}
+        />
       )}
-
-      <PhotoSection orderId={order.id} photos={order.photos} allowed={allowedPhotos} />
 
       {order.timeEntries.length > 0 && (
         <div className="section panel">
@@ -286,17 +245,6 @@ export default function OrderDetail() {
             >
               Težava rešena, nadaljuj delo
             </button>
-          )}
-          <button
-            className="btn-primary btn-lg"
-            disabled={setStatus.isPending || !!running || !hasFinishedWork}
-            onClick={() => setStatus.mutate("ZAKLJUCEN")}
-          >
-            Zaključi delovni nalog
-          </button>
-          {running && <p className="muted center">Najprej končaj delo.</p>}
-          {!running && !hasFinishedWork && (
-            <p className="muted center">Najprej začni in končaj delo, da se zapišejo ure.</p>
           )}
         </div>
       )}

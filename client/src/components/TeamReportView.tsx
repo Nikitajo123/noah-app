@@ -67,9 +67,21 @@ export default function TeamReportView({ report }: { report: TeamReportData }) {
               <div className="tr-wrow total">
                 <span>Ure naloga</span>
                 <span />
-                <b>{formatHours(o.hours)}</b>
+                {o.noHours ? <b className="no-hours">brez ur</b> : <b>{formatHours(o.hours)}</b>}
               </div>
             </div>
+
+            {o.statuses.length > 0 && (
+              <>
+                <p className="rsub">Stanje</p>
+                {o.statuses.map((s) => (
+                  <p key={s.userId} className="rline">
+                    {s.name}: <b>{s.done ? "narejeno" : "ni narejeno"}</b>
+                    {s.note ? `. ${s.note}` : ""}
+                  </p>
+                ))}
+              </>
+            )}
 
             <p className="rsub">Opravljeno delo</p>
             {work.length === 0 && <p className="muted rline">Ni vnosov.</p>}

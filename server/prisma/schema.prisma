@@ -10,6 +10,8 @@ datasource db {
 enum Role {
   DELAVEC
   VODJA
+  VODJA_GRADBISC
+  VODJA_DEL
 }
 
 enum OrderStatus {
@@ -45,6 +47,10 @@ model User {
   reports       DailyReport[]
   notes         OrderNote[]       @relation("noteAuthor")
   timeEdits     TimeEntryEdit[]   @relation("entryEditor")
+  dayStatuses   OrderDayStatus[]
+  dayStatusLogs OrderDayStatusLog[]
+  projectAssignments ProjectAssignment[]
+  orderEdits    WorkOrderEdit[]   @relation("orderEditor")
   teamId          String?
   team            Team?        @relation("members", fields: [teamId], references: [id])
   foremanOf       Team[]       @relation("foreman")
@@ -54,8 +60,9 @@ model User {
 model Project {
   id         String      @id @default(uuid())
   name       String
-  location   String
-  workOrders WorkOrder[]
+  location    String
+  workOrders  WorkOrder[]
+  assignments ProjectAssignment[]
 }
 
 model WorkOrder {
@@ -78,6 +85,9 @@ model WorkOrder {
   workLogs     WorkLog[]
   photos       Photo[]
   notes        OrderNote[]
+  dayStatuses  OrderDayStatus[]
+  dayLogs      OrderDayStatusLog[]
+  edits        WorkOrderEdit[]
 }
 
 model Material {
@@ -197,4 +207,51 @@ model TeamReport {
   submittedBy   User?        @relation("teamReportSubmitter", fields: [submittedById], references: [id])
 
   @@unique([teamId, date])
+}
+
+model OrderDayStatus {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  date        DateTime  @db.Date
+  done        Boolean
+  note        String?
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workOrderId, userId, date])
+}
+
+model OrderDayStatusLog {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  date        DateTime  @db.Date
+  done        Boolean
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+// Which gradbišča a Vodja gradbišč or Vodja del belongs to.
+model ProjectAssignment {
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+}
+
+// One manager edit of an order. changes = [{ field, old, new }].
+model WorkOrderEdit {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  editedById  String
+  editedBy    User      @relation("orderEditor", fields: [editedById], references: [id])
+  createdAt   DateTime  @default(now())
+  changes     Json
 }

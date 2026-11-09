@@ -12,6 +12,7 @@ import ManagerOrder from "./pages/ManagerOrder";
 import ProjectsList from "./pages/ProjectsList";
 import Admin from "./pages/Admin";
 import Reports from "./pages/Reports";
+import DailyOverview from "./pages/DailyOverview";
 import { Spinner } from "./components/States";
 
 export default function App() {
@@ -27,15 +28,17 @@ export default function App() {
     );
   }
 
-  if (user.role === "VODJA") {
+  if (user.role !== "DELAVEC") {
     return (
       <Routes>
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route element={<ManagerLayout />}>
           <Route path="/" element={<ManagerOverview />} />
           <Route path="/nalog/:id" element={<ManagerOrder />} />
+          <Route path="/dnevni-pregled" element={<DailyOverview />} />
           <Route path="/porocila" element={<Reports />} />
-          <Route path="/projekti" element={<ProjectsList />} />
+          <Route path="/gradbisca" element={<ProjectsList />} />
+          <Route path="/projekti" element={<Navigate to="/gradbisca" replace />} />
           <Route path="/upravljanje" element={<Admin />} />
           <Route path="/profil" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

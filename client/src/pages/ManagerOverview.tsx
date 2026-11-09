@@ -53,7 +53,7 @@ export default function ManagerOverview() {
         <SearchBox
           value={query}
           onChange={setQuery}
-          placeholder="Išči po delavcu, projektu ali nalogu"
+          placeholder="Išči po delavcu, gradbišču ali nalogu"
           label="Iskanje v pregledu"
         />
         <input
@@ -62,7 +62,7 @@ export default function ManagerOverview() {
           onChange={(e) => e.target.value && setDate(e.target.value)}
         />
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-          <option value="">Vsi projekti</option>
+          <option value="">Vsa gradbišča</option>
           {projects.data?.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}

@@ -1,16 +1,22 @@
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
-import type { Project, WorkOrder } from "../types";
+import { Link } from "react-router-dom";
+import type { Project, Role, WorkOrder, WorkOrderDetail } from "../types";
 import { EmptyState, Skeleton } from "../components/States";
 import { IconCheck } from "../components/Icons";
 import TeamsAdmin from "../components/TeamsAdmin";
 import ResetPassword from "../components/ResetPassword";
+import ProjectsAdmin from "../components/ProjectsAdmin";
+import OrderEditForm from "../components/OrderEditForm";
+import { useAuth } from "../auth";
+import { ROLE_LABEL } from "../format";
 
 type Tab = "order" | "orders" | "project" | "user" | "teams";
 type Worker = { id: string; name: string };
-type UserRow = { id: string; name: string; email: string; role: "DELAVEC" | "VODJA" };
+type UserRow = { id: string; name: string; email: string; role: Role };
+const ROLES: Role[] = ["DELAVEC", "VODJA_DEL", "VODJA_GRADBISC", "VODJA"];
 
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
 
@@ -74,9 +80,9 @@ function OrderForm() {
     <form onSubmit={submit}>
       {done && <div className="okmsg">{done}</div>}
       <label className="field">
-        Projekt
+        Gradbišče
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-          <option value="">Izberi projekt</option>
+          <option value="">Izberi gradbišče</option>
           {projects.data?.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}, {p.location}
@@ -167,8 +173,19 @@ function OrderForm() {
   );
 }
 
+// Loads the full order, then shows the same "Uredi nalog" form as on the order page.
+function OrderEditInline({ id, onClose }: { id: string; onClose: () => void }) {
+  const q = useQuery({ queryKey: ["order", id], queryFn: () => api<WorkOrderDetail>(`/work-orders/${id}`) });
+  if (q.isLoading) return <Skeleton rows={1} variant="line" />;
+  if (q.error || !q.data) return <p className="error">{q.error?.message ?? "Naloga ni"}</p>;
+  return <OrderEditForm order={q.data} onClose={onClose} />;
+}
+
 function OrdersList() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user!.role === "VODJA";
+  const [editId, setEditId] = useState<string | null>(null);
   const q = useQuery({ queryKey: ["all-orders"], queryFn: () => api<WorkOrder[]>("/work-orders") });
   const del = useMutation({
     mutationFn: (id: string) => api(`/work-orders/${id}`, { method: "DELETE" }),
@@ -185,15 +202,26 @@ function OrdersList() {
       {q.data?.length === 0 && <EmptyState>Ni nalogov.</EmptyState>}
       {del.error && <p className="error">{del.error.message}</p>}
       {q.data?.map((o) => (
-        <div key={o.id} className="arow">
+        <Fragment key={o.id}>
+        <div className="arow">
           <div>
-            <b>{o.number}</b>
+            <Link to={`/nalog/${o.id}`} className="dp-link">
+              {o.number}
+            </Link>
             <br />
             <small className="muted">
               {o.project.name}, {o.worker.name}
             </small>
           </div>
           <StatusChip status={o.status} />
+          <button
+            className="btn-mini neutral"
+            aria-expanded={editId === o.id}
+            onClick={() => setEditId(editId === o.id ? null : o.id)}
+          >
+            Uredi
+          </button>
+          {isAdmin && (
           <button
             className="btn-mini"
             disabled={del.isPending}
@@ -209,59 +237,12 @@ function OrdersList() {
           >
             Izbriši
           </button>
+          )}
         </div>
+        {editId === o.id && <OrderEditInline id={o.id} onClose={() => setEditId(null)} />}
+        </Fragment>
       ))}
     </div>
-  );
-}
-
-function ProjectForm() {
-  const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
-  const [done, setDone] = useState("");
-
-  const create = useMutation({
-    mutationFn: () =>
-      api<Project>("/projects", {
-        method: "POST",
-        body: JSON.stringify({ name: name.trim(), location: location.trim() }),
-      }),
-    onSuccess: (p) => {
-      setDone(`Ustvarjen projekt ${p.name}`);
-      setName("");
-      setLocation("");
-      qc.invalidateQueries({ queryKey: ["projects"] });
-    },
-  });
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    setDone("");
-    create.mutate();
-  }
-
-  return (
-    <form onSubmit={submit}>
-      {done && (
-        <div className="okmsg" role="status">
-          <IconCheck size={18} />
-          {done}
-        </div>
-      )}
-      <label className="field">
-        Ime projekta
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Hiša Horvat" />
-      </label>
-      <label className="field">
-        Lokacija
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Maribor" />
-      </label>
-      {create.error && <p className="error">{create.error.message}</p>}
-      <button className="btn-primary" disabled={create.isPending || !name.trim() || !location.trim()}>
-        {create.isPending ? "Ustvarjam..." : "Ustvari projekt"}
-      </button>
-    </form>
   );
 }
 
@@ -271,7 +252,7 @@ function UserForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"DELAVEC" | "VODJA">("DELAVEC");
+  const [role, setRole] = useState<Role>("DELAVEC");
   const [done, setDone] = useState("");
 
   const create = useMutation({
@@ -324,9 +305,12 @@ function UserForm() {
         </label>
         <label className="field">
           Vloga
-          <select value={role} onChange={(e) => setRole(e.target.value as "DELAVEC" | "VODJA")}>
-            <option value="DELAVEC">Delavec</option>
-            <option value="VODJA">Vodja</option>
+          <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r]}
+              </option>
+            ))}
           </select>
         </label>
         {create.error && <p className="error">{create.error.message}</p>}
@@ -346,7 +330,7 @@ function UserForm() {
             <br />
             <small className="muted">{u.email}</small>
           </div>
-          <small>{u.role === "VODJA" ? "vodja" : "delavec"}</small>
+          <RoleSelect user={u} />
           <ResetPassword userId={u.id} name={u.name} />
         </div>
       ))}
@@ -355,23 +339,66 @@ function UserForm() {
   );
 }
 
+function RoleSelect({ user }: { user: UserRow }) {
+  const qc = useQueryClient();
+  const { user: me } = useAuth();
+  const change = useMutation({
+    mutationFn: (role: Role) =>
+      api(`/users/${user.id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["workers"] });
+    },
+    onError: (e: Error) => window.alert(e.message),
+  });
+  if (me!.id === user.id) return <small>{ROLE_LABEL[user.role]}</small>;
+  return (
+    <select
+      className="role-select"
+      aria-label={`Vloga za ${user.name}`}
+      value={user.role}
+      disabled={change.isPending}
+      onChange={(e) => {
+        const role = e.target.value as Role;
+        if (window.confirm(`Spremenim vlogo za ${user.name} v ${ROLE_LABEL[role]}?`)) change.mutate(role);
+      }}
+    >
+      {ROLES.map((r) => (
+        <option key={r} value={r}>
+          {ROLE_LABEL[r]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// Tabs per role: Admin all, Vodja gradbišč also gradbišča, Vodja dela only orders.
+const TABS: { id: Tab; label: string; roles: Role[] }[] = [
+  { id: "order", label: "Nov nalog", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },
+  { id: "orders", label: "Nalogi", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },
+  { id: "project", label: "Gradbišče", roles: ["VODJA", "VODJA_GRADBISC"] },
+  { id: "user", label: "Uporabnik", roles: ["VODJA"] },
+  { id: "teams", label: "Ekipe", roles: ["VODJA"] },
+];
+
 export default function Admin() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("order");
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "order", label: "Nov nalog" },
-    { id: "orders", label: "Nalogi" },
-    { id: "project", label: "Projekt" },
-    { id: "user", label: "Uporabnik" },
-    { id: "teams", label: "Ekipe" },
-  ];
+  const tabs = TABS.filter((t) => t.roles.includes(user!.role));
 
   return (
     <div className="pg">
       <header className="top">
         <h1>Upravljanje</h1>
-        <p>Ustvari naloge, projekte in uporabnike</p>
+        <p>
+          {user!.role === "VODJA"
+            ? "Ustvari naloge, gradbišča in uporabnike"
+            : user!.role === "VODJA_GRADBISC"
+              ? "Ustvari naloge in gradbišča"
+              : "Ustvari in uredi naloge"}
+        </p>
       </header>
-      <div className="seg five">
+      <div className={tabs.length === 5 ? "seg five" : "seg"}>
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -386,7 +413,7 @@ export default function Admin() {
       <div className={`admin tab-${tab}`}>
         {tab === "order" && <OrderForm />}
         {tab === "orders" && <OrdersList />}
-        {tab === "project" && <ProjectForm />}
+        {tab === "project" && <ProjectsAdmin />}
         {tab === "user" && <UserForm />}
         {tab === "teams" && <TeamsAdmin />}
         {(tab === "order" || tab === "project") && (

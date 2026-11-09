@@ -1,7 +1,14 @@
 export type Status = "NOV" | "V_DELU" | "ZAKLJUCEN" | "PROBLEM";
+// VODJA is shown as "Admin".
+export type Role = "DELAVEC" | "VODJA" | "VODJA_GRADBISC" | "VODJA_DEL";
 export type PhotoKind = "PRED" | "MED" | "KONCANO" | "PROBLEM";
 
-export type Project = { id: string; name: string; location: string };
+export type Project = {
+  id: string;
+  name: string;
+  location: string;
+  _count?: { workOrders: number };
+};
 export type Material = { id: string; name: string; usedQty: number | null };
 
 export type TimeEntryEdit = {
@@ -59,12 +66,43 @@ export type WorkLog = {
 
 export type Photo = {
   id: string;
+  userId?: string;
   kind: PhotoKind;
   path: string;
   takenAt: string;
 };
 
+export type DayStatus = {
+  id: string;
+  date: string;
+  done: boolean;
+  note: string | null;
+  updatedAt: string;
+  user: { id: string; name: string };
+};
+
+export type DayStatusLog = {
+  id: string;
+  date: string;
+  done: boolean;
+  note: string | null;
+  createdAt: string;
+  user: { id: string; name: string };
+};
+
+export type OrderEditChange = { field: string; old: string | null; new: string | null };
+
+export type WorkOrderEdit = {
+  id: string;
+  createdAt: string;
+  changes: OrderEditChange[];
+  editedBy: { id: string; name: string };
+};
+
 export type WorkOrderDetail = WorkOrder & {
+  edits: WorkOrderEdit[];
+  dayStatuses: DayStatus[];
+  dayLogs: DayStatusLog[];
   manager: { id: string; name: string };
   timeEntries: TimeEntry[];
   workLogs: WorkLog[];
@@ -88,6 +126,8 @@ export type ReportOrder = {
   arrival: string | null;
   departure: string | null;
   hours: number;
+  noHours: boolean;
+  dayStatus: { done: boolean; note: string | null } | null;
   logs: { description: string; quantity: number | null; unit: string | null; note: string | null }[];
   materials: { name: string; usedQty: number | null }[];
   problems: (string | null)[];
@@ -135,6 +175,8 @@ export type TeamReportOrder = {
   status: Status;
   project: { name: string; location: string };
   hours: number;
+  noHours: boolean;
+  statuses: { userId: string; name: string; done: boolean; note: string | null }[];
   workers: {
     userId: string;
     name: string;
@@ -192,3 +234,39 @@ export type ProjectHoursData = {
     workers: { name: string; hours: number }[];
   }[];
 };
+export type DayState = "DONE" | "NOT_DONE" | "NONE";
+
+export type DailyOverviewGroup = {
+  id: string;
+  name: string;
+  location: string;
+  orders: {
+    id: string;
+    number: string;
+    description: string;
+    status: Status;
+    noHours: boolean;
+    photos: number;
+    workers: {
+      id: string;
+      name: string;
+      state: DayState;
+      note: string | null;
+      photos: number;
+      hours: number | null;
+      running: boolean;
+    }[];
+  }[];
+  open: {
+    id: string;
+    number: string;
+    description: string;
+    status: Status;
+    workDate: string;
+    daysOpen: number;
+    workers: string[];
+    lastNote: { text: string; date: string; by: string; done: boolean } | null;
+  }[];
+};
+
+export type DailyOverviewData = { date: string; projects: DailyOverviewGroup[] };

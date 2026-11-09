@@ -18,8 +18,8 @@ export default function ProjectsList() {
   return (
     <div className="pg">
       <header className="top">
-        <h1>Projekti</h1>
-        <p>Objekti in delovni nalogi</p>
+        <h1>Gradbišča</h1>
+        <p>Gradbišča in delovni nalogi</p>
       </header>
       <figure className="pj-photo" aria-hidden="true">
         <img src="/photos/house-real-1600.webp" alt="" />
@@ -27,6 +27,9 @@ export default function ProjectsList() {
       <div className="list">
         {(projects.isLoading || orders.isLoading) && <Skeleton rows={3} />}
         {projects.error && <p className="error" role="alert">{projects.error.message}</p>}
+        {projects.data?.length === 0 && (
+          <p className="muted">Ni gradbišč.</p>
+        )}
         {projects.data?.map((p) => {
           const list = (orders.data ?? []).filter((o) => o.project.id === p.id);
           return (
