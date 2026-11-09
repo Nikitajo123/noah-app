@@ -1,7 +1,16 @@
 export type Status = "NOV" | "V_DELU" | "ZAKLJUCEN" | "PROBLEM";
+// VODJA is shown as "Admin".
+export type Role = "DELAVEC" | "VODJA" | "VODJA_GRADBISC" | "VODJA_DEL";
+export type ManagerRef = { id: string; name: string; role: Role };
 export type PhotoKind = "PRED" | "MED" | "KONCANO" | "PROBLEM";
 
-export type Project = { id: string; name: string; location: string };
+export type Project = {
+  id: string;
+  name: string;
+  location: string;
+  managers?: ManagerRef[];
+  _count?: { workOrders: number };
+};
 export type Material = { id: string; name: string; usedQty: number | null };
 
 export type TimeEntryEdit = {

@@ -1,4 +1,11 @@
-import type { Status, WorkOrder } from "./types";
+import type { Role, Status, WorkOrder } from "./types";
+
+export const ROLE_LABEL: Record<Role, string> = {
+  VODJA: "Admin",
+  VODJA_GRADBISC: "Vodja gradbišč",
+  VODJA_DEL: "Vodja del",
+  DELAVEC: "Delavec",
+};
 
 export const STATUS_LABEL: Record<Status, string> = {
   NOV: "Novo",

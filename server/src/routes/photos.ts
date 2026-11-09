@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { isAssigned } from "../access";
+import { canManageProject } from "../permissions";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -61,8 +62,18 @@ photosRouter.get("/:id/file", async (req, res) => {
     include: { file: true },
   });
   if (!photo || !photo.file) return res.status(404).json({ error: "Fotografije ni" });
-  if (req.user!.role === "DELAVEC" && !(await isAssigned(photo.workOrderId, req.user!.id))) {
-    return res.status(403).json({ error: "Ni dovoljenja" });
+  if (req.user!.role === "DELAVEC") {
+    if (!(await isAssigned(photo.workOrderId, req.user!.id))) {
+      return res.status(403).json({ error: "Ni dovoljenja" });
+    }
+  } else {
+    const order = await prisma.workOrder.findUnique({
+      where: { id: photo.workOrderId },
+      select: { projectId: true },
+    });
+    if (!order || !(await canManageProject(req.user!, order.projectId))) {
+      return res.status(404).json({ error: "Fotografije ni" });
+    }
   }
   res.setHeader("Content-Type", photo.file.mimeType);
   res.setHeader("Cache-Control", "private, max-age=31536000, immutable");

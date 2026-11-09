@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { streamTeamReportPdf } from "../pdfTeam";
+import { assignedProjectIds, inProjects, requireAdmin, requireManager } from "../permissions";
 
 const person = { select: { id: true, name: true } } as const;
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -36,7 +37,7 @@ teamsRouter.get("/mine", requireRole("DELAVEC"), async (req, res) => {
   res.json({ team, isForeman: !!team && team.foremanId === req.user!.id });
 });
 
-teamsRouter.get("/", requireRole("VODJA"), async (_req, res) => {
+teamsRouter.get("/", requireAdmin, async (_req, res) => {
   const teams = await prisma.team.findMany({ include: teamInclude, orderBy: { name: "asc" } });
   res.json(teams);
 });
@@ -60,7 +61,7 @@ async function checkPeople(foremanId: string, memberIds: string[], teamId?: stri
   return { ids } as const;
 }
 
-teamsRouter.post("/", requireRole("VODJA"), async (req, res) => {
+teamsRouter.post("/", requireAdmin, async (req, res) => {
   const parsed = teamSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Vnesi ime, delovodjo in člane" });
   const check = await checkPeople(parsed.data.foremanId, parsed.data.memberIds);
@@ -80,7 +81,7 @@ teamsRouter.post("/", requireRole("VODJA"), async (req, res) => {
   }
 });
 
-teamsRouter.put("/:id", requireRole("VODJA"), async (req, res) => {
+teamsRouter.put("/:id", requireAdmin, async (req, res) => {
   const id = req.params.id as string;
   const parsed = teamSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Vnesi ime, delovodjo in člane" });
@@ -104,7 +105,7 @@ teamsRouter.put("/:id", requireRole("VODJA"), async (req, res) => {
   }
 });
 
-teamsRouter.delete("/:id", requireRole("VODJA"), async (req, res) => {
+teamsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const id = req.params.id as string;
   const existing = await prisma.team.findUnique({ where: { id } });
   if (!existing) return res.status(404).json({ error: "Ekipe ni" });
@@ -118,7 +119,8 @@ teamsRouter.delete("/:id", requireRole("VODJA"), async (req, res) => {
 
 // ---------- Poročilo ekipe ----------
 
-async function buildTeamReport(teamId: string, date?: string) {
+// scope: gradbišča the viewer may see (null = all).
+async function buildTeamReport(teamId: string, date?: string, scope: string[] | null = null) {
   const { key, start, end, reportDate } = dayInfo(date);
   const day = { gte: start, lt: end };
 
@@ -128,6 +130,7 @@ async function buildTeamReport(teamId: string, date?: string) {
 
   const orders = await prisma.workOrder.findMany({
     where: {
+      ...inProjects(scope),
       OR: [
         { timeEntries: { some: { userId: { in: ids }, startedAt: day } } },
         { workLogs: { some: { userId: { in: ids }, createdAt: day } } },
@@ -240,6 +243,8 @@ teamReportsRouter.get("/", async (req, res) => {
   if (!q.success) return res.status(400).json({ error: "Napačen filter" });
 
   let teamId = q.data.teamId;
+  let scope: string[] | null = null;
+  if (req.user!.role !== "DELAVEC") scope = await assignedProjectIds(req.user!);
   if (req.user!.role === "DELAVEC") {
     const me = await prisma.user.findUnique({
       where: { id: req.user!.id },
@@ -250,7 +255,7 @@ teamReportsRouter.get("/", async (req, res) => {
   }
   if (!teamId) return res.status(400).json({ error: "Manjka ekipa" });
 
-  const report = await buildTeamReport(teamId, q.data.date);
+  const report = await buildTeamReport(teamId, q.data.date, scope);
   if (!report) return res.status(404).json({ error: "Ekipe ni" });
   res.json(report);
 });
@@ -260,6 +265,8 @@ teamReportsRouter.get("/pdf", async (req, res) => {
   if (!q.success) return res.status(400).json({ error: "Napačen filter" });
 
   let teamId = q.data.teamId;
+  let scope: string[] | null = null;
+  if (req.user!.role !== "DELAVEC") scope = await assignedProjectIds(req.user!);
   if (req.user!.role === "DELAVEC") {
     const me = await prisma.user.findUnique({
       where: { id: req.user!.id },
@@ -270,7 +277,7 @@ teamReportsRouter.get("/pdf", async (req, res) => {
   }
   if (!teamId) return res.status(400).json({ error: "Manjka ekipa" });
 
-  const report = await buildTeamReport(teamId, q.data.date);
+  const report = await buildTeamReport(teamId, q.data.date, scope);
   if (!report) return res.status(404).json({ error: "Ekipe ni" });
 
   res.setHeader("Content-Type", "application/pdf");
@@ -281,15 +288,17 @@ teamReportsRouter.get("/pdf", async (req, res) => {
   streamTeamReportPdf(report, res, photoData);
 });
 
-teamReportsRouter.get("/day", requireRole("VODJA"), async (req, res) => {
+teamReportsRouter.get("/day", requireManager, async (req, res) => {
   const q = z.object({ date: z.string().regex(dateRe).optional() }).safeParse(req.query);
   if (!q.success) return res.status(400).json({ error: "Napačen datum" });
 
   const teams = await prisma.team.findMany({ select: { id: true }, orderBy: { name: "asc" } });
+  const scope = await assignedProjectIds(req.user!);
   const rows = [];
   for (const t of teams) {
-    const r = await buildTeamReport(t.id, q.data.date);
-    if (!r) continue;
+    const r = await buildTeamReport(t.id, q.data.date, scope);
+    // Scoped managers only see teams that worked in their gradbišča that day.
+    if (!r || (scope !== null && r.orders.length === 0)) continue;
     rows.push({
       teamId: t.id,
       name: r.team.name,
@@ -361,7 +370,7 @@ teamReportsRouter.post("/save", requireRole("DELAVEC"), async (req, res) => {
 // ---------- Ure po projektih ----------
 
 export const projectHoursRouter = Router();
-projectHoursRouter.use(requireAuth, requireRole("VODJA"));
+projectHoursRouter.use(requireAuth, requireManager);
 
 projectHoursRouter.get("/", async (req, res) => {
   const q = z
@@ -384,8 +393,13 @@ projectHoursRouter.get("/", async (req, res) => {
     return res.status(400).json({ error: "Obdobje je lahko dolgo največ eno leto" });
   }
 
+  const scope = await assignedProjectIds(req.user!);
   const entries = await prisma.timeEntry.findMany({
-    where: { startedAt: { gte: start, lt: end }, endedAt: { not: null } },
+    where: {
+      startedAt: { gte: start, lt: end },
+      endedAt: { not: null },
+      workOrder: inProjects(scope),
+    },
     include: { user: person, workOrder: { select: { id: true, project: true } } },
   });
 

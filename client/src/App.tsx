@@ -27,7 +27,7 @@ export default function App() {
     );
   }
 
-  if (user.role === "VODJA") {
+  if (user.role !== "DELAVEC") {
     return (
       <Routes>
         <Route path="/login" element={<Navigate to="/" replace />} />
@@ -35,7 +35,8 @@ export default function App() {
           <Route path="/" element={<ManagerOverview />} />
           <Route path="/nalog/:id" element={<ManagerOrder />} />
           <Route path="/porocila" element={<Reports />} />
-          <Route path="/projekti" element={<ProjectsList />} />
+          <Route path="/gradbisca" element={<ProjectsList />} />
+          <Route path="/projekti" element={<Navigate to="/gradbisca" replace />} />
           <Route path="/upravljanje" element={<Admin />} />
           <Route path="/profil" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

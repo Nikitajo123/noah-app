@@ -97,7 +97,7 @@ export default function ManagerOrder() {
   });
 
   // Days on which anyone recorded something on this order. Without a date in the
-  // link (e.g. from Projekti) the report opens on the last of them, not on today.
+  // link (e.g. from Gradbišča) the report opens on the last of them, not on today.
   const d = orderQ.data;
   const workDays = d
     ? [

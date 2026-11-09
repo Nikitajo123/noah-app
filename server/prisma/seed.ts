@@ -33,6 +33,31 @@ async function main() {
   const muller = projects.find((p) => p.name === "Hiša Müller")!;
   const kovac = projects.find((p) => p.name === "Hiša Kovač")!;
 
+  // Vodja gradbišč sees Novak and Müller, Vodja del only Novak. Nobody but Admin sees Kovač.
+  const vodjaGradbisc = await prisma.user.upsert({
+    where: { email: "vodja.gradbisc@noah.si" },
+    update: {},
+    create: {
+      name: "Petra Zupan",
+      email: "vodja.gradbisc@noah.si",
+      passwordHash: hash,
+      role: "VODJA_GRADBISC",
+    },
+  });
+  const vodjaDel = await prisma.user.upsert({
+    where: { email: "vodja.del@noah.si" },
+    update: {},
+    create: { name: "Tomaž Kranjc", email: "vodja.del@noah.si", passwordHash: hash, role: "VODJA_DEL" },
+  });
+  await prisma.projectAssignment.createMany({
+    data: [
+      { projectId: novak.id, userId: vodjaGradbisc.id },
+      { projectId: muller.id, userId: vodjaGradbisc.id },
+      { projectId: novak.id, userId: vodjaDel.id },
+    ],
+    skipDuplicates: true,
+  });
+
   await prisma.workOrder.upsert({
     where: { number: "2026-00125" },
     update: {},

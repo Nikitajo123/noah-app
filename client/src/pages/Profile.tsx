@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { IconCheck, IconLogout } from "../components/Icons";
+import { ROLE_LABEL } from "../format";
 
 function ChangePassword() {
   const [current, setCurrent] = useState("");
@@ -79,7 +80,7 @@ export default function Profile() {
         </span>
         <h2>{user!.name}</h2>
         <p className="muted">
-          {user!.email}, {user!.role === "VODJA" ? "vodja" : "delavec"}
+          {user!.email}, {ROLE_LABEL[user!.role]}
         </p>
       </div>
       <ChangePassword />

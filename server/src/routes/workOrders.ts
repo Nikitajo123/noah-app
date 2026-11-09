@@ -4,6 +4,14 @@ import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { isAssigned } from "../access";
 import { closeIfAllDone, todayDate } from "../dayStatus";
+import {
+  assignedProjectIds,
+  canManageProject,
+  inProjects,
+  requireAdmin,
+  requireManager,
+  scopedOrder,
+} from "../permissions";
 
 export const workOrdersRouter = Router();
 workOrdersRouter.use(requireAuth);
@@ -42,9 +50,11 @@ workOrdersRouter.get("/", async (req, res) => {
 
   const where: any = {};
   if (req.user!.role === "DELAVEC") where.workers = { some: { userId: req.user!.id } };
+  else Object.assign(where, inProjects(await assignedProjectIds(req.user!)));
+  // A projectId filter must stay inside the scope above, so it is combined with AND.
+  if (projectId) where.AND = [{ projectId }];
   if (status === "open") where.status = { not: "ZAKLJUCEN" };
   else if (status) where.status = status;
-  if (projectId) where.projectId = projectId;
   if (date) {
     const start = new Date(`${date}T00:00:00`);
     const end = new Date(start);
@@ -95,6 +105,9 @@ workOrdersRouter.get("/:id", async (req, res) => {
   if (isWorker && !order.workers.some((w) => w.user.id === req.user!.id)) {
     return res.status(403).json({ error: "Ni dovoljenja" });
   }
+  if (!isWorker && !(await canManageProject(req.user!, order.projectId))) {
+    return res.status(404).json({ error: "Naloga ni" });
+  }
   res.json(shape(order));
 });
 
@@ -121,10 +134,13 @@ async function nextNumber() {
   return `${year}-${String(n).padStart(5, "0")}`;
 }
 
-workOrdersRouter.post("/", requireRole("VODJA"), async (req, res) => {
+workOrdersRouter.post("/", requireManager, async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Napačni podatki", details: parsed.error.issues });
+  }
+  if (!(await canManageProject(req.user!, parsed.data.projectId))) {
+    return res.status(403).json({ error: "Ni dovoljenja za to gradbišče" });
   }
   const { materials, number, workerIds, ...data } = parsed.data;
 
@@ -152,7 +168,7 @@ workOrdersRouter.post("/", requireRole("VODJA"), async (req, res) => {
   res.status(409).json({ error: "Naloga ni bilo mogoče ustvariti. Preveri podatke." });
 });
 
-workOrdersRouter.put("/:id/workers", requireRole("VODJA"), async (req, res) => {
+workOrdersRouter.put("/:id/workers", requireManager, async (req, res) => {
   const parsed = z
     .object({ workerIds: z.array(z.string().uuid()).min(1) })
     .safeParse(req.body);
@@ -160,7 +176,9 @@ workOrdersRouter.put("/:id/workers", requireRole("VODJA"), async (req, res) => {
 
   const id = req.params.id as string;
   const order = await prisma.workOrder.findUnique({ where: { id }, include: { workers: true } });
-  if (!order) return res.status(404).json({ error: "Naloga ni" });
+  if (!order || !(await canManageProject(req.user!, order.projectId))) {
+    return res.status(404).json({ error: "Naloga ni" });
+  }
   if (order.status === "ZAKLJUCEN") {
     return res.status(400).json({ error: "Zaključenega naloga ni mogoče spreminjati" });
   }
@@ -197,11 +215,11 @@ workOrdersRouter.put("/:id/workers", requireRole("VODJA"), async (req, res) => {
 
 const noteSchema = z.object({ text: z.string().trim().min(1).max(1000) });
 
-workOrdersRouter.post("/:id/notes", requireRole("VODJA"), async (req, res) => {
+workOrdersRouter.post("/:id/notes", requireManager, async (req, res) => {
   const parsed = noteSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Vnesi besedilo" });
   const id = req.params.id as string;
-  const order = await prisma.workOrder.findUnique({ where: { id } });
+  const order = await scopedOrder(req.user!, id);
   if (!order) return res.status(404).json({ error: "Naloga ni" });
   const note = await prisma.orderNote.create({
     data: { workOrderId: id, authorId: req.user!.id, text: parsed.data.text },
@@ -209,11 +227,11 @@ workOrdersRouter.post("/:id/notes", requireRole("VODJA"), async (req, res) => {
   res.status(201).json(note);
 });
 
-workOrdersRouter.post("/:id/resolve", requireRole("VODJA"), async (req, res) => {
+workOrdersRouter.post("/:id/resolve", requireManager, async (req, res) => {
   const parsed = noteSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Vnesi, kako je bila težava rešena" });
   const id = req.params.id as string;
-  const order = await prisma.workOrder.findUnique({ where: { id } });
+  const order = await scopedOrder(req.user!, id);
   if (!order) return res.status(404).json({ error: "Naloga ni" });
   if (order.status !== "PROBLEM") {
     return res.status(400).json({ error: "Naloga nima prijavljene težave" });
@@ -227,7 +245,7 @@ workOrdersRouter.post("/:id/resolve", requireRole("VODJA"), async (req, res) => 
   res.json({ ok: true });
 });
 
-workOrdersRouter.delete("/:id", requireRole("VODJA"), async (req, res) => {
+workOrdersRouter.delete("/:id", requireAdmin, async (req, res) => {
   const id = req.params.id as string;
   const order = await prisma.workOrder.findUnique({ where: { id } });
   if (!order) return res.status(404).json({ error: "Naloga ni" });
