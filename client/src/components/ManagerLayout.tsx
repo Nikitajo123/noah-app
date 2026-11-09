@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth";
 import { ROLE_LABEL } from "../format";
-import { IconManage, IconOverview, IconProjects, IconReport, IconUser } from "./Icons";
+import { IconManage, IconOverview, IconProjects, IconReport, IconTasks, IconUser } from "./Icons";
 import type { Role } from "../types";
 
 const cls = ({ isActive }: { isActive: boolean }) => (isActive ? "mtab active" : "mtab");
@@ -12,6 +12,7 @@ const ALL: Role[] = ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"];
 
 const ITEMS: Item[] = [
   { to: "/", label: "Pregled", icon: <IconOverview />, roles: ALL, end: true },
+  { to: "/dnevni-pregled", label: "Dnevni pregled", icon: <IconTasks />, roles: ALL },
   { to: "/porocila", label: "Poročila", icon: <IconReport />, roles: ALL },
   { to: "/gradbisca", label: "Gradbišča", icon: <IconProjects />, roles: ALL },
   { to: "/upravljanje", label: "Upravljanje", icon: <IconManage />, roles: ALL },

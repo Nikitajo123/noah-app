@@ -12,6 +12,7 @@ import ManagerOrder from "./pages/ManagerOrder";
 import ProjectsList from "./pages/ProjectsList";
 import Admin from "./pages/Admin";
 import Reports from "./pages/Reports";
+import DailyOverview from "./pages/DailyOverview";
 import { Spinner } from "./components/States";
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
         <Route element={<ManagerLayout />}>
           <Route path="/" element={<ManagerOverview />} />
           <Route path="/nalog/:id" element={<ManagerOrder />} />
+          <Route path="/dnevni-pregled" element={<DailyOverview />} />
           <Route path="/porocila" element={<Reports />} />
           <Route path="/gradbisca" element={<ProjectsList />} />
           <Route path="/projekti" element={<Navigate to="/gradbisca" replace />} />

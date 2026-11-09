@@ -1,97 +1,173 @@
 # Testni načrt
 
-Za testiranje potrebuješ lokalno aplikacijo (`docker compose up -d`, v mapi `server` `npm run dev`, v mapi `client` `npm run dev`, nato odpri http://localhost:5173) ali živo stran.
+## Priprava
+
+1. `docker compose up -d` (lokalna baza).
+2. V mapi `server`: `npx prisma migrate dev` (doda nove tabele v **lokalno** bazo), nato `npx prisma db seed`, nato `npm run dev`.
+3. V mapi `client`: `npm run dev`, odpri http://localhost:5173.
+4. Samodejno preverjanje pravic (strežnik mora teči na portu 3000): v mapi `server` zaženi `npm run check:permissions`. Na koncu mora pisati "N od N preverjanj uspešnih". Skripta sama ustvari in izbriše testni nalog in testno gradbišče. Nikoli je ne zaganjaj proti živi strani.
 
 Demo uporabniki (geslo `noah123`):
 
-| Uporabnik | Vloga |
-| --- | --- |
-| janez@noah.si | Vodja (kasneje Admin) |
-| marko@noah.si | Delavec |
-| luka@noah.si | Delavec |
+| Uporabnik | Vloga | Vidi gradbišča |
+| --- | --- | --- |
+| janez@noah.si | Admin | vsa |
+| vodja.gradbisc@noah.si | Vodja gradbišč | Hiša Novak, Hiša Müller |
+| vodja.del@noah.si | Vodja del | Hiša Novak |
+| marko@noah.si | Delavec | samo svoje naloge |
+| luka@noah.si | Delavec | samo svoje naloge |
 
-**Glasovni vnos (gumb Govori)** deluje samo prek HTTPS. Na lokalnem naslovu `http://localhost` ga ne moreš preizkusiti, zato ga preizkusi na živi strani.
+Nalogi iz seed podatkov: **2026-00125** (Hiša Novak, Marko), **2026-00126** (Hiša Müller, Marko in Luka), **2026-00127** (Hiša Kovač, Luka).
 
-Nalog **2026-00126** imata dodeljena Marko in Luka. Nalog **2026-00125** ima samo Marko.
+**Glasovni vnos (gumb Govori)** deluje samo prek HTTPS. Na `http://localhost` ga ne moreš preizkusiti, zato ga preizkusi na živi strani.
+
+**Če se z `noah123` lokalno ne moreš prijaviti**: seed ne spreminja gesel uporabnikov, ki že obstajajo. Lokalno bazo lahko na novo napolniš z `npx prisma migrate reset` (izbriše vse **lokalne** podatke, nato znova zažene seed).
 
 ---
 
 ## Stopnja 1: potek dela delavca in dnevno stanje
 
-### 1. Zaslon naloga (prijava kot marko@noah.si)
+### 1.1 Zaslon naloga (marko@noah.si)
 
-1. Prijavi se kot **marko@noah.si**. Odpre se "Moji nalogi".
-2. Odpri nalog **2026-00125**.
-   - Pričakovano: najprej je viden opis dela, pod njim projekt in kraj, nato "Datum" in "Rok". Planirano in material sta manjše besedilo pod tem ("Planirano: ... Material: ...").
-   - Pričakovano: ni obrazca za vnos dela, ni seznama vnosov, ni polja za količino in enoto, ni vnosa količin materiala.
-3. Pritisni **Začni delovni nalog**. Status postane "V delu".
-4. Pritisni **Začni delo**. Pojavi se "Delo poteka".
+1. Prijavi se kot **marko@noah.si** in odpri nalog **2026-00125**.
+   - Pričakovano: najprej je viden opis dela, pod njim gradbišče in kraj, nato "Datum" in "Rok". Planirano in material sta manjše besedilo ("Planirano: ... Material: ...").
+   - Pričakovano: ni obrazca za vnos dela, ni seznama vnosov, ni polja za količino in enoto, ni vnosa porabe materiala.
+2. Pritisni **Začni delovni nalog**. Status postane "V delu".
+3. Pritisni **Začni delo**. Pojavi se "Delo poteka".
 
-### 2. Odgovor NE (nalog ostane odprt)
+### 1.2 Odgovor NE
 
 1. Pod "Zaključen nalog" pritisni **NE**.
-   - Pričakovano: pojavi se polje "Zakaj ni narejeno in kaj ostane" in gumb **Govori**. Pod poljem piše "Brez razloga se stanje NE ne shrani."
-2. Vnesi besedilo, npr. "Manjka 10 vijakov, jutri dokončamo." in počakaj približno sekundo.
-   - Pričakovano: pod poljem se prikaže "Shranjujem...", nato "Shranjeno". Ni gumba Shrani.
-3. Osveži stran.
-   - Pričakovano: NE je še vedno izbran, besedilo je ohranjeno.
-4. Pojdi nazaj na seznam, zavihek **Odprti**.
-   - Pričakovano: nalog je še v "Odprti". Ostane tam tudi naslednji dan.
-5. Izbriši besedilo in počakaj sekundo.
-   - Pričakovano: stanja brez razloga ne shrani (ne zapiše se prazen razlog).
+   - Pričakovano: pojavi se polje "Zakaj ni narejeno in kaj ostane", gumb **Govori** in opozorilo "Brez razloga se stanje NE ne shrani."
+2. Vpiši "Manjka 10 vijakov, jutri dokončamo." in počakaj sekundo.
+   - Pričakovano: "Shranjujem...", nato "Shranjeno". Gumba Shrani ni.
+3. Osveži stran. Pričakovano: NE in besedilo sta ohranjena, besedilo lahko še urejaš.
+4. Na seznamu nalogov je nalog še pod **Odprti**.
 
-### 3. Odgovor DA (nalog se zaključi)
+### 1.3 Odgovor DA
 
-1. Na nalogu 2026-00125 imaš zagnano delo (Delo poteka). Pritisni **DA**.
-   - Pričakovano: pojavi se vprašanje "Delo še poteka. Končam delo in zaključim nalog?". Pritisni **Prekliči**: nič se ne spremeni, delo teče naprej.
-2. Ponovno pritisni **DA** in potrdi.
-   - Pričakovano: delo se konča (ure se zapišejo), nalog dobi status "Zaključen", pod DA se prikaže "Nalog je zaključen...".
-3. Vpiši neobvezno opombo (polje "Opomba (neobvezno)"). Pričakovano: samodejno "Shranjujem...", "Shranjeno".
-4. Na seznamu odpri zavihek **Zaključeni**.
-   - Pričakovano: nalog je tam.
+1. Delo še poteka. Pritisni **DA**. Pojavi se "Delo še poteka. Končam delo in zaključim nalog?".
+2. Pritisni **Prekliči**. Pričakovano: nič se ne spremeni.
+3. Znova pritisni **DA** in potrdi. Pričakovano: delo se konča, nalog dobi status "Zaključen", piše "Nalog je zaključen. Opombo in fotografije lahko še dopolnjuješ."
+4. Vpiši opombo v "Opomba (neobvezno)". Pričakovano: "Shranjujem...", "Shranjeno".
+5. Nalog je na seznamu pod **Zaključeni**.
 
-### 4. DA brez ur
+### 1.4 DA brez ur
 
-1. Prijavi se kot **luka@noah.si**, odpri nalog **2026-00127**, pritisni **Začni delovni nalog**.
-2. Ne začni dela. Pritisni **DA**.
-   - Pričakovano: nalog se zaključi kljub temu, da ni ur.
+1. Prijavi se kot **luka@noah.si**, odpri **2026-00127**, pritisni **Začni delovni nalog**, ne začni dela, pritisni **DA**.
+   - Pričakovano: nalog se zaključi. Admin pri tem nalogu vidi "brez ur".
 
-### 5. Več delavcev na nalogu (2026-00126)
+### 1.5 Več delavcev (2026-00126)
 
-1. Marko: odpri nalog 2026-00126, **Začni delovni nalog**, pritisni **DA**.
-   - Pričakovano: nalog ostane "V delu", piše "Čakamo še na ostale delavce na tem nalogu.".
-2. Luka: odpri isti nalog, pritisni **DA**.
-   - Pričakovano: nalog postane "Zaključen" (obema je zadnje stanje DA).
-3. Luka: pritisni **NE**, vpiši razlog.
-   - Pričakovano: nalog je spet "V delu" (ponovno odprt). Marko ga vidi spet pod "Odprti".
+1. Marko: **Začni delovni nalog**, nato **DA**. Pričakovano: nalog ostane "V delu", piše "Čakamo še na ostale delavce na tem nalogu."
+2. Luka: **DA**. Pričakovano: nalog postane "Zaključen".
+3. Luka: **NE** z razlogom. Pričakovano: nalog je spet "V delu" in je pri obeh spet pod **Odprti**.
 
-### 6. Fotografije
+### 1.6 Fotografije
 
-1. Odpri odprt nalog. V razdelku **Fotografije** sta gumba **Izberi fotografije** in **Slikaj**. Ni štirih ploščic (Pred, Med delom, ...).
-2. Pritisni **Izberi fotografije** in izberi 5 do 8 slik hkrati.
-   - Pričakovano: vsaka slika dobi sličico z napisom "Nalaga se..." in nato "Naloženo". Pod gumbi piše "X od Y naloženih".
-3. Izklopi omrežje (v brskalniku Orodja za razvijalce → Network → Offline) in dodaj sliko.
-   - Pričakovano: slika ima napis "Napaka" in gumb **Poskusi znova**. Vklopi omrežje in pritisni gumb: slika se naloži enkrat (brez dvojnika).
-4. Zaključi nalog (DA) in dodaj še eno fotografijo.
-   - Pričakovano: fotografija se naloži tudi na zaključen nalog.
-5. **Slikaj** na telefonu odpre kamero.
+1. Na odprtem nalogu sta gumba **Izberi fotografije** in **Slikaj**. Štirih ploščic (Pred, Med delom, ...) ni več.
+2. **Izberi fotografije**: izberi 5 do 8 slik. Pričakovano: vsaka sličica ima "Nalaga se...", nato "Naloženo". Nad sličicami piše "X od Y naloženih".
+3. V brskalniku vklopi način brez povezave (Orodja za razvijalce, Network, Offline) in dodaj sliko. Pričakovano: "Napaka" in gumb **Poskusi znova**. Vklopi povezavo, pritisni gumb: slika se naloži enkrat, brez dvojnika.
+4. Na zaključenem nalogu dodaj fotografijo. Pričakovano: se naloži.
+5. Na telefonu **Slikaj** odpre kamero.
 
-### 7. Ostalo za delavca
+### 1.7 Ostalo pri delavcu
 
-- **Prijavi težavo** deluje kot prej (pošlje težavo vodji, nalog postane "Problem").
-- **Sporočila vodje** se še vedno prikažejo na vrhu naloga.
-- Gumba **Začni delo** / **Končaj delo** in skupne ure delujejo kot prej.
+- **Prijavi težavo**, **Sporočila vodje**, **Začni delo** / **Končaj delo** in "Evidenca ur" delujejo kot prej.
+- **Moje ure** (dnevno poročilo) in poročilo ekipe še delujeta, PDF se prenese.
 
-### 8. Pogled vodje (prijava kot janez@noah.si)
+### 1.8 Kaj vidi vodja (janez@noah.si)
 
-1. Odpri nalog, ki so ga delavci obdelali (Pregled → nalog).
-   - Pričakovano: razdelek "Stanje naloga po dnevih" kaže ime, datum, "Narejeno" / "Ni narejeno" in opombo. Pod njim je "Zgodovina sprememb" z vsako spremembo DA/NE.
-2. Za nalog, ki je bil zaključen brez ur, piše pri urah **brez ur**.
-3. Odpri **Poročila** (poročilo ekipe) in dnevno poročilo delavca za ta dan.
-   - Pričakovano: pri nalogu je "Stanje: narejeno" ali "Stanje: ni narejeno" z opombo, pri nalogu brez ur piše "brez ur".
-4. Prenesi PDF poročila (dnevno in ekipno).
-   - Pričakovano: v PDF je vrstica "Stanje: narejeno / ni narejeno" z opombo, pri nalogu brez ur piše "brez ur".
+1. Odpri nalog 2026-00126. Pričakovano: razdelek "Stanje naloga po dnevih" (ime, datum, "Narejeno" / "Ni narejeno", opomba) in "Zgodovina sprememb" z vsako spremembo DA/NE.
+2. Nalog brez ur ima pri urah "brez ur".
+3. Dnevno poročilo delavca in poročilo ekipe (Poročila) imata "Stanje: narejeno / ni narejeno" z opombo. PDF-ja imata isto vrstico in "brez ur".
 
-### 9. Čez noč / naslednji dan
+### 1.9 Naslednji dan
 
-- Nalog z odgovorom NE ostane v "Odprti". Ko ga delavec naslednji dan odpre, vidi pod DA / NE "Zadnji vnos, ...: ni narejeno" in razlog od prej.
+- Nalog z NE ostane pod **Odprti**. Ko ga delavec naslednji dan odpre, pod DA / NE vidi "Zadnji vnos, ...: ni narejeno" in razlog.
+
+---
+
+## Stopnja 2: vloge in pravice
+
+### 2.1 Admin (janez@noah.si)
+
+1. Levo pod logotipom (na računalniku) piše **Admin**. Na Profilu piše vloga "Admin".
+2. Meni: Pregled, Dnevni pregled, Poročila, **Gradbišča** (prej Projekti), Upravljanje, Profil.
+3. **Upravljanje** ima zavihke: Nov nalog, Nalogi, Gradbišče, Uporabnik, Ekipe.
+4. **Gradbišča** pokaže vsa tri gradbišča, tudi **Hiša Kovač**.
+5. Upravljanje, **Gradbišče**: ustvari "Hiša Test", Maribor. Pričakovano: "Ustvarjeno gradbišče Hiša Test" in je na seznamu spodaj.
+6. Pri Hiši Test pritisni **Uredi**, spremeni ime, **Shrani**. Pričakovano: novo ime.
+7. Pri Hiši Novak pritisni **Vodje gradbišč**: vidiš "Petra Zupan" označeno. Pri **Vodje del**: vidiš "Tomaž Kranjc" označen.
+8. Pri Hiši Novak je **Izbriši** onemogočen (ima naloge). Pri Hiši Test **Izbriši** deluje.
+9. Upravljanje, **Uporabnik**: vloga ima izbire Delavec, Vodja del, Vodja gradbišč, Admin. Na seznamu uporabnikov lahko spremeniš vlogo (potrditev), pri sebi ne.
+10. Upravljanje, **Nalogi**: pri vsakem nalogu je **Izbriši**.
+
+### 2.2 Vodja gradbišč (vodja.gradbisc@noah.si)
+
+1. Vloga pod logotipom in na profilu: "Vodja gradbišč".
+2. **Gradbišča**: samo Hiša Novak in Hiša Müller. Hiše Kovač ni.
+3. **Pregled**, **Poročila** (poročila ekip, ure po gradbiščih) in **Dnevni pregled** kažejo samo podatke za Novak in Müller.
+4. **Upravljanje** ima samo: Nov nalog, Nalogi, Gradbišče.
+5. **Nov nalog**: izbira "Gradbišče" ponuja samo Novak in Müller.
+6. **Gradbišče**: ustvari "Hiša Zupan". Pričakovano: je na seznamu in pri njem piše "Vodje gradbišč: Petra Zupan" (samodejno dodeljena).
+7. Pri Hiši Müller pritisni **Vodje del**, označi "Tomaž Kranjc", **Shrani**. Pričakovano: vodja del zdaj vidi tudi Hišo Müller. Nato ga spet odznači.
+8. Gumba **Vodje gradbišč** in **Izbriši** ni.
+9. **Nalogi**: gumba **Izbriši** ni.
+
+### 2.3 Vodja del (vodja.del@noah.si)
+
+1. Vloga: "Vodja del". **Gradbišča**: samo Hiša Novak.
+2. **Upravljanje** ima samo: Nov nalog, Nalogi.
+3. **Nov nalog**: ustvari nalog v Hiši Novak in izberi poljubnega delavca (tudi Luko). Pričakovano: "Ustvarjen nalog ...".
+4. Odpri nalog: lahko dodaš opombo, spremeniš delavce, popraviš ure (če obstajajo).
+5. Na nalogih ni gumba **Izbriši**.
+
+### 2.4 Delavec
+
+1. **marko@noah.si** vidi samo svoje naloge, kot prej. Do strani vodje nima dostopa.
+
+### 2.5 Pravice na strežniku
+
+- Zaženi `npm run check:permissions` (v mapi `server`). Preveri med drugim:
+  - Vodja del ne more ustvariti gradbišča (403) in ne vidi Hiše Kovač (404).
+  - Vodja gradbišč ne more dodeliti vodje del v Hiši Kovač (403).
+  - Delavec ne more klicati nobene poti vodje (403).
+  - Samo Admin lahko izbriše nalog in ustvari uporabnika.
+  - Vodja del ustvari in uredi nalog v Hiši Novak.
+
+---
+
+## Stopnja 3: Uredi nalog
+
+Prijava kot **vodja.del@noah.si** (ali Admin ali Vodja gradbišč).
+
+1. Odpri nalog v Hiši Novak. Na vrhu sta gumba **Uredi nalog** in **Zaključi nalog**.
+2. Pritisni **Uredi nalog**. Odpre se obrazec: Naloga, Gradbišče, Planirana količina, Enota, Predviden čas (ure), Datum, Rok, Material, Delavci.
+3. Spremeni opis in rok, preimenuj en material, dodaj nov material (**Dodaj material**), **Shrani spremembe**.
+   - Pričakovano: obrazec se zapre, podatki so posodobljeni. Pojavi se razdelek **Spremembe** z imenom, datumom, uro in vsako spremembo ("Naloga: ... → ...", "Material dodan: ...").
+4. Kot Vodja del je v izbiri "Gradbišče" samo Hiša Novak.
+5. **Odstranjevanje z uporabo**:
+   - Če ima delavec na nalogu ure, ga odznači in shrani. Pričakovano: napaka "... ima na tem nalogu evidentirane ure, zato ga ni mogoče odstraniti."
+   - Če ima material vneseno porabo (iz starih podatkov), ga odstrani in shrani. Pričakovano: napaka "Material "..." ima vneseno porabo, zato ga ni mogoče odstraniti."
+6. **Spremeni delavce** deluje tudi na zaključenem nalogu in se zapiše v Spremembe.
+7. **Zaključi nalog** (potrditev): nalog postane "Zaključen", v Spremembah piše "Status: V delu → Zaključen". Če kdo še dela, se prikaže napaka "... še dela na tem nalogu."
+8. Na zaključenem nalogu je gumb **Ponovno odpri**: nalog je spet "V delu", zapis v Spremembah.
+9. **Uredi nalog** deluje tudi na zaključenem nalogu.
+10. Delavec (marko@noah.si) na svojem nalogu ne vidi razdelka Spremembe in nima gumba Uredi nalog.
+
+---
+
+## Stopnja 4: Dnevni pregled
+
+Prijava kot **janez@noah.si**, nato še kot **vodja.gradbisc@noah.si** in **vodja.del@noah.si**.
+
+1. V meniju izberi **Dnevni pregled**.
+2. Pričakovano: datum je danes. Razdelek "Nalogi na ta dan" je razdeljen po gradbiščih, vsako ima vrstico z imenom in "N nalogov, narejeno X od Y".
+3. Pritisni na vrstico gradbišča: skupina se zapre, ob ponovnem pritisku odpre.
+4. Pri vsakem nalogu je povezava **Nalog 2026-...** (odpre nalog), status, opis in vsak dodeljen delavec s stanjem **Narejeno**, **Ni narejeno** ali **Brez vnosa**, opombo, številom fotografij in urami (ali "brez ur", ali "dela").
+5. Izberi drug datum: podatki se zamenjajo.
+6. Izbira **Vsa gradbišča**: izberi eno gradbišče, prikaže se samo to. Iskalnik "Išči gradbišče" filtrira po imenu ali kraju.
+7. Razdelek **Odprti nalogi**: nalogi iz prejšnjih dni, ki niso zaključeni, z "Odprt N dni (od ...)", delavci in zadnjo opombo ("Ime, datum: besedilo").
+8. Vodja del vidi samo Hišo Novak, vodja gradbišč Novak in Müller. Hiše Kovač ne vidi nihče razen Admina.
+9. Na telefonu je v spodnjem meniju 6 gumbov in vsi napisi so berljivi.

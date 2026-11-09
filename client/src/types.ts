@@ -235,3 +235,39 @@ export type ProjectHoursData = {
     workers: { name: string; hours: number }[];
   }[];
 };
+export type DayState = "DONE" | "NOT_DONE" | "NONE";
+
+export type DailyOverviewGroup = {
+  id: string;
+  name: string;
+  location: string;
+  orders: {
+    id: string;
+    number: string;
+    description: string;
+    status: Status;
+    noHours: boolean;
+    photos: number;
+    workers: {
+      id: string;
+      name: string;
+      state: DayState;
+      note: string | null;
+      photos: number;
+      hours: number | null;
+      running: boolean;
+    }[];
+  }[];
+  open: {
+    id: string;
+    number: string;
+    description: string;
+    status: Status;
+    workDate: string;
+    daysOpen: number;
+    workers: string[];
+    lastNote: { text: string; date: string; by: string; done: boolean } | null;
+  }[];
+};
+
+export type DailyOverviewData = { date: string; projects: DailyOverviewGroup[] };

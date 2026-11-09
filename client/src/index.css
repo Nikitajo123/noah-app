@@ -1898,3 +1898,45 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .edit-row { padding: var(--s3) 0; border-bottom: 1px solid var(--fog); }
 .edit-row:last-child { border-bottom: 0; }
 .edit-row p { margin: 4px 0 0; font-size: 15px; }
+
+/* ---------- Dnevni pregled ---------- */
+.dp { padding: 0 var(--s5) var(--s8); }
+.dp-title { margin: var(--s6) 0 var(--s3); font-size: 22px; font-weight: 750; letter-spacing: -0.03em; }
+.dp-sub { margin: calc(var(--s2) * -1) 0 var(--s3); }
+.dp-group { margin-bottom: var(--s3); border-radius: var(--r-lg); background: var(--paper); box-shadow: var(--sh-2); overflow: hidden; }
+.dp-head {
+  display: grid;
+  grid-template-columns: 1fr auto 24px;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dp-head:focus-visible { outline: 3px solid var(--acc); outline-offset: -3px; }
+.dp-name { font-size: 17px; font-weight: 700; }
+.dp-count { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.dp-chev { display: flex; transition: transform 0.15s; }
+.dp-group.open .dp-chev { transform: rotate(90deg); }
+.dp-body { padding: 0 var(--s4) var(--s2); }
+.dp-order { padding: var(--s3) 0; border-top: 1px solid var(--fog); }
+.dp-order-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+.dp-link { font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: var(--acc); text-underline-offset: 3px; }
+.dp-desc { margin: 4px 0 var(--s2); font-size: 15px; line-height: 1.45; }
+.dp-worker { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); padding: var(--s2) 0; }
+.dp-wmain { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dp-note { margin: 4px 0 0; padding: var(--s2) 10px; border-radius: var(--r-sm); background: var(--fog); font-size: 14px; line-height: 1.45; }
+.ds-chip.none { background: var(--fog); color: var(--mute); }
+@media (max-width: 480px) { .dp-head { grid-template-columns: 1fr 24px; } .dp-count { grid-row: 2; grid-column: 1; } }
+@media (prefers-reduced-motion: reduce) { .dp-chev { transition: none; } }
+/* Six manager tabs on a phone: narrower pills, two-line labels allowed. */
+@media (max-width: 899px) {
+  .mside .mtab { font-size: 11px; line-height: 1.15; text-align: center; padding: 0 2px; }
+  .mside .mtab .ic { width: 48px; }
+}

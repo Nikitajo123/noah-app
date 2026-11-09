@@ -93,6 +93,7 @@ for (const [m, p] of [
   ["GET", "/reports/day"],
   ["GET", "/team-reports/day"],
   ["GET", "/teams"],
+  ["GET", "/daily-overview"],
 ]) {
   await check(`delavec ${m} ${p}`, worker, m, p, undefined, 403);
 }
@@ -112,6 +113,12 @@ if (kovacOrder) {
 }
 await check("vodja del: seznam nalogov brez Hiše Kovač", vd, "GET", "/work-orders", undefined, 200, noKovac);
 await check("vodja del: pregled brez Hiše Kovač", vd, "GET", "/overview", undefined, 200, noKovac);
+await check("vodja del: dnevni pregled brez Hiše Kovač", vd, "GET", "/daily-overview", undefined, 200, (d) => noKovac(d.projects));
+await check("vodja del: dnevni pregled s filtrom Hiša Kovač je prazen", vd, "GET", `/daily-overview?projectId=${kovac.id}`, undefined, 200, (d) =>
+  d.projects.length === 0 ? "" : "vrne podatke"
+);
+await check("vodja gradbišč: dnevni pregled brez Hiše Kovač", vg, "GET", "/daily-overview", undefined, 200, (d) => noKovac(d.projects));
+await check("admin: dnevni pregled", admin, "GET", "/daily-overview", undefined, 200);
 await check("vodja del ne more ustvariti gradbišča", vd, "POST", "/projects", { name: "Test", location: "X" }, 403);
 await check("vodja del ne more urejati gradbišča", vd, "PATCH", `/projects/${novak.id}`, { name: "X", location: "Y" }, 403);
 await check("vodja del ne more dodeliti vodij", vd, "PUT", `/projects/${novak.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 403);
@@ -169,6 +176,11 @@ if (testOrderId) {
   await check("Luka začne nalog", lukaToken, "PATCH", `/work-orders/${testOrderId}/status`, { status: "V_DELU" }, 200);
   await check("NE brez razloga ni dovoljen", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: false }, 400);
   await check("Luka vnese NE z razlogom", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: false, note: "Manjka material" }, 200);
+  await check("dnevni pregled pokaže Lukov NE z razlogom", vd, "GET", `/daily-overview?date=${today}`, undefined, 200, (d) => {
+    const o = d.projects.flatMap((p) => p.orders).find((x) => x.id === testOrderId);
+    const w = o?.workers.find((x) => x.id === luka.id);
+    return w?.state === "NOT_DONE" && w.note === "Manjka material" ? "" : "stanja ni v pregledu";
+  });
   await check("Marko (ni na nalogu) ne more vnesti stanja", worker, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 404);
   await check("vodja ne more vnesti stanja namesto delavca", vd, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 403);
   await check("Luka začne delo", lukaToken, "POST", "/time/start", { workOrderId: testOrderId }, 201);

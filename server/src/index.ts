@@ -15,6 +15,7 @@ import { usersRouter } from "./routes/admin";
 import { timeEntriesRouter } from "./routes/timeEntries";
 import { teamsRouter, teamReportsRouter, projectHoursRouter } from "./routes/teams";
 import { voiceRouter } from "./routes/voice";
+import { dailyOverviewRouter } from "./routes/dailyOverview";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -43,6 +44,7 @@ api.use("/teams", teamsRouter);
 api.use("/team-reports", teamReportsRouter);
 api.use("/project-hours", projectHoursRouter);
 api.use("/voice", voiceRouter);
+api.use("/daily-overview", dailyOverviewRouter);
 app.use("/api", api);
 
 const clientDist = path.resolve(__dirname, "../../client/dist");
