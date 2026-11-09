@@ -50,6 +50,7 @@ model User {
   dayStatuses   OrderDayStatus[]
   dayStatusLogs OrderDayStatusLog[]
   projectAssignments ProjectAssignment[]
+  orderEdits    WorkOrderEdit[]   @relation("orderEditor")
   teamId          String?
   team            Team?        @relation("members", fields: [teamId], references: [id])
   foremanOf       Team[]       @relation("foreman")
@@ -86,6 +87,7 @@ model WorkOrder {
   notes        OrderNote[]
   dayStatuses  OrderDayStatus[]
   dayLogs      OrderDayStatusLog[]
+  edits        WorkOrderEdit[]
 }
 
 model Material {
@@ -241,4 +243,15 @@ model ProjectAssignment {
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+}
+
+// One manager edit of an order. changes = [{ field, old, new }].
+model WorkOrderEdit {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  editedById  String
+  editedBy    User      @relation("orderEditor", fields: [editedById], references: [id])
+  createdAt   DateTime  @default(now())
+  changes     Json
 }

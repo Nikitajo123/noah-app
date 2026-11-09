@@ -16,9 +16,9 @@ import {
 export const workOrdersRouter = Router();
 workOrdersRouter.use(requireAuth);
 
-const person = { select: { id: true, name: true } } as const;
+export const person = { select: { id: true, name: true } } as const;
 
-const listInclude = {
+export const listInclude = {
   project: true,
   workers: { include: { user: person } },
   materials: { orderBy: { name: "asc" } },
@@ -27,7 +27,7 @@ const listInclude = {
 type WithWorkers = { workers: { user: { id: string; name: string } }[] };
 
 // The API returns `workers` (list) and `worker` (all names joined, for simple lists).
-function shape<T extends WithWorkers>(order: T) {
+export function shape<T extends WithWorkers>(order: T) {
   const { workers, ...rest } = order;
   const list = workers.map((w) => w.user);
   return {
@@ -99,6 +99,12 @@ workOrdersRouter.get("/:id", async (req, res) => {
         orderBy: { createdAt: "asc" },
         include: { user: person },
       },
+      // Workers get an empty list: the edit history is for managers.
+      edits: {
+        where: isWorker ? { id: "" } : {},
+        orderBy: { createdAt: "asc" },
+        include: { editedBy: person },
+      },
     },
   });
   if (!order) return res.status(404).json({ error: "Naloga ni" });
@@ -166,51 +172,6 @@ workOrdersRouter.post("/", requireManager, async (req, res) => {
     }
   }
   res.status(409).json({ error: "Naloga ni bilo mogoče ustvariti. Preveri podatke." });
-});
-
-workOrdersRouter.put("/:id/workers", requireManager, async (req, res) => {
-  const parsed = z
-    .object({ workerIds: z.array(z.string().uuid()).min(1) })
-    .safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "Izberi vsaj enega delavca" });
-
-  const id = req.params.id as string;
-  const order = await prisma.workOrder.findUnique({ where: { id }, include: { workers: true } });
-  if (!order || !(await canManageProject(req.user!, order.projectId))) {
-    return res.status(404).json({ error: "Naloga ni" });
-  }
-  if (order.status === "ZAKLJUCEN") {
-    return res.status(400).json({ error: "Zaključenega naloga ni mogoče spreminjati" });
-  }
-
-  const wanted = [...new Set(parsed.data.workerIds)];
-  const valid = await prisma.user.count({ where: { id: { in: wanted }, role: "DELAVEC" } });
-  if (valid !== wanted.length) return res.status(400).json({ error: "Neveljaven delavec" });
-
-  const current = order.workers.map((w) => w.userId);
-  const removed = current.filter((u) => !wanted.includes(u));
-  const added = wanted.filter((u) => !current.includes(u));
-
-  if (removed.length > 0) {
-    const used = await prisma.timeEntry.count({
-      where: { workOrderId: id, userId: { in: removed } },
-    });
-    if (used > 0) {
-      return res
-        .status(400)
-        .json({ error: "Delavca z evidentiranimi urami ni mogoče odstraniti z naloga" });
-    }
-  }
-
-  await prisma.$transaction([
-    prisma.workOrderWorker.deleteMany({ where: { workOrderId: id, userId: { in: removed } } }),
-    prisma.workOrderWorker.createMany({
-      data: added.map((userId) => ({ workOrderId: id, userId })),
-    }),
-  ]);
-
-  const updated = await prisma.workOrder.findUnique({ where: { id }, include: listInclude });
-  res.json(shape(updated!));
 });
 
 const noteSchema = z.object({ text: z.string().trim().min(1).max(1000) });

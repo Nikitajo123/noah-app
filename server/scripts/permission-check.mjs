@@ -137,6 +137,62 @@ if (testOrderId) {
   await check("vodja del zamenja delavca na svojem nalogu", vd, "PUT", `/work-orders/${testOrderId}/workers`, { workerIds: [luka.id] }, 200);
   await check("vodja del doda opombo", vd, "POST", `/work-orders/${testOrderId}/notes`, { text: "Test opomba" }, 201);
   await check("vodja del ne more izbrisati naloga", vd, "DELETE", `/work-orders/${testOrderId}`, undefined, 403);
+
+  console.log("\nUredi nalog (vodja del, Hiša Novak)");
+  const detail = (await call(vd, "GET", `/work-orders/${testOrderId}`)).data;
+  const screw = detail.materials.find((m) => m.name === "vijaki");
+  await check("vodja del uredi opis, rok in material", vd, "PATCH", `/work-orders/${testOrderId}`, {
+    description: "Test pravic, urejeno",
+    dueDate: today,
+    plannedHours: 3,
+    materials: [{ id: screw.id, name: "vijaki 6 mm" }, { name: "lepilo" }],
+  }, 200, (d) => (d.changes?.length >= 3 ? "" : "spremembe niso zapisane"));
+  await check("sprememba je zapisana v zgodovini", vd, "GET", `/work-orders/${testOrderId}`, undefined, 200, (d) =>
+    d.edits.length >= 2 ? "" : `samo ${d.edits.length} zapisov`
+  );
+  await check("vodja del ne more prestaviti naloga v Hišo Kovač", vd, "PATCH", `/work-orders/${testOrderId}`, { projectId: kovac.id }, 403);
+  await check("vodja gradbišč prestavi nalog v Hišo Müller", vg, "PATCH", `/work-orders/${testOrderId}`, { projectId: muller.id }, 200);
+  await check("vodja del zdaj ne vidi naloga (Müller ni njegov)", vd, "GET", `/work-orders/${testOrderId}`, undefined, 404);
+  await check("vodja gradbišč vrne nalog v Hišo Novak", vg, "PATCH", `/work-orders/${testOrderId}`, { projectId: novak.id }, 200);
+  if (kovacOrder) {
+    await check("vodja del ne more urejati naloga v Hiši Kovač", vd, "PATCH", `/work-orders/${kovacOrder.id}`, { description: "x" }, 404);
+    await check("vodja gradbišč ne more zaključiti naloga v Hiši Kovač", vg, "POST", `/work-orders/${kovacOrder.id}/close`, undefined, 404);
+  }
+  await check("delavec ne more urejati naloga", worker, "PATCH", `/work-orders/${testOrderId}`, { description: "x" }, 403);
+
+  console.log("\nDnevno stanje in zaščita podatkov");
+  const lukaToken = await login("luka@noah.si");
+  await check("delavec (Luka) ne vidi zgodovine sprememb", lukaToken, "GET", `/work-orders/${testOrderId}`, undefined, 200, (d) =>
+    d.edits.length === 0 ? "" : "vidi spremembe"
+  );
+  await check("stanje pred začetkom naloga ni mogoče", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: false, note: "x" }, 400);
+  await check("Luka začne nalog", lukaToken, "PATCH", `/work-orders/${testOrderId}/status`, { status: "V_DELU" }, 200);
+  await check("NE brez razloga ni dovoljen", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: false }, 400);
+  await check("Luka vnese NE z razlogom", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: false, note: "Manjka material" }, 200);
+  await check("Marko (ni na nalogu) ne more vnesti stanja", worker, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 404);
+  await check("vodja ne more vnesti stanja namesto delavca", vd, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 403);
+  await check("Luka začne delo", lukaToken, "POST", "/time/start", { workOrderId: testOrderId }, 201);
+  await check("DA med delom ni mogoč", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 400);
+  await check("vodja ne more zaključiti, ko delo poteka", vd, "POST", `/work-orders/${testOrderId}/close`, undefined, 400);
+  await check("Luka konča delo", lukaToken, "POST", "/time/end", {}, 200);
+  await check("delavca z urami ni mogoče odstraniti", vd, "PATCH", `/work-orders/${testOrderId}`, { workerIds: [marko.id] }, 400);
+  const glue = (await call(vd, "GET", `/work-orders/${testOrderId}`)).data.materials.find((m) => m.name === "lepilo");
+  await check("Luka vnese porabo materiala", lukaToken, "PATCH", `/materials/${glue.id}`, { usedQty: 2 }, 200);
+  await check("materiala s porabo ni mogoče odstraniti", vd, "PATCH", `/work-orders/${testOrderId}`, {
+    materials: (await call(vd, "GET", `/work-orders/${testOrderId}`)).data.materials
+      .filter((m) => m.id !== glue.id)
+      .map((m) => ({ id: m.id, name: m.name })),
+  }, 400);
+  await check("Luka DA zaključi nalog", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 200, (d) =>
+    d.closed ? "" : "nalog se ni zaključil"
+  );
+  await check("delavec ne more ponovno odpreti prek poti vodje", lukaToken, "POST", `/work-orders/${testOrderId}/reopen`, undefined, 403);
+  await check("vodja del ponovno odpre nalog", vd, "POST", `/work-orders/${testOrderId}/reopen`, undefined, 200);
+  await check("vodja del zaključi nalog", vd, "POST", `/work-orders/${testOrderId}/close`, undefined, 200);
+  await check("vodja del uredi zaključen nalog", vd, "PATCH", `/work-orders/${testOrderId}`, { plannedHours: 4 }, 200);
+  await check("nalog ostane zaključen po urejanju", lukaToken, "GET", `/work-orders/${testOrderId}`, undefined, 200, (d) =>
+    d.status === "ZAKLJUCEN" ? "" : `status ${d.status}`
+  );
 }
 await check("vodja del: ure po gradbiščih", vd, "GET", "/project-hours", undefined, 200, (d) =>
   d.projects.some((p) => p.projectId === kovac.id) ? "vidi Hišo Kovač" : ""

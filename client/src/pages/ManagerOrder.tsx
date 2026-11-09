@@ -8,6 +8,7 @@ import PhotoImg from "../components/PhotoImg";
 import StatusSteps from "../components/StatusSteps";
 import ManagerNotes from "../components/ManagerNotes";
 import TimeEntryRow from "../components/TimeEntryRow";
+import OrderEditForm from "../components/OrderEditForm";
 import { Skeleton } from "../components/States";
 import {
   IconAlert,
@@ -20,8 +21,8 @@ import {
   IconEdit,
   IconHistory,
 } from "../components/Icons";
-import { formatTime, plannedText } from "../format";
-import type { DailyReportData, PhotoKind, WorkOrderDetail } from "../types";
+import { formatTime, plannedText, STATUS_LABEL } from "../format";
+import type { DailyReportData, OrderEditChange, PhotoKind, Status, WorkOrderDetail } from "../types";
 
 const KIND_LABEL: Record<PhotoKind, string> = {
   PRED: "Pred",
@@ -29,6 +30,34 @@ const KIND_LABEL: Record<PhotoKind, string> = {
   KONCANO: "Končano",
   PROBLEM: "Problem",
 };
+
+const FIELD_LABEL: Record<string, string> = {
+  description: "Naloga",
+  project: "Gradbišče",
+  plannedQty: "Planirana količina",
+  plannedUnit: "Enota",
+  plannedHours: "Predviden čas (ure)",
+  workDate: "Datum",
+  dueDate: "Rok",
+  material: "Material",
+  workers: "Delavci",
+  status: "Status",
+};
+
+function changeText(c: OrderEditChange) {
+  const label = FIELD_LABEL[c.field] ?? c.field;
+  const show = (v: string | null) =>
+    v == null || v === ""
+      ? "prazno"
+      : c.field === "status"
+        ? (STATUS_LABEL[v as Status] ?? v)
+        : c.field === "workDate" || c.field === "dueDate"
+          ? new Date(`${v}T12:00:00`).toLocaleDateString("sl-SI")
+          : v;
+  if (c.field === "material" && c.old == null) return `Material dodan: ${c.new}`;
+  if (c.field === "material" && c.new == null) return `Material odstranjen: ${c.old}`;
+  return `${label}: ${show(c.old)} → ${show(c.new)}`;
+}
 
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("sv-SE");
@@ -43,6 +72,7 @@ export default function ManagerOrder() {
   const [selected, setSelected] = useState<string[]>([]);
   const [reportUser, setReportUser] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [editOrder, setEditOrder] = useState(false);
 
   const orderQ = useQuery({
     queryKey: ["order", id],
@@ -94,6 +124,12 @@ export default function ManagerOrder() {
       setNoteText("");
       refreshOrder();
     },
+  });
+
+  const closeOrder = useMutation({
+    mutationFn: (action: "close" | "reopen") =>
+      api(`/work-orders/${id}/${action}`, { method: "POST" }),
+    onSuccess: refreshOrder,
   });
 
   // Days on which anyone recorded something on this order. Without a date in the
@@ -186,6 +222,45 @@ export default function ManagerOrder() {
         </div>
       )}
 
+      {editOrder ? (
+        <OrderEditForm order={o} onClose={() => setEditOrder(false)} />
+      ) : (
+        <div className="section order-actions">
+          <button className="btn-secondary" onClick={() => setEditOrder(true)}>
+            <IconEdit size={18} />
+            Uredi nalog
+          </button>
+          {o.status === "ZAKLJUCEN" ? (
+            <button
+              className="btn-secondary"
+              disabled={closeOrder.isPending}
+              onClick={() => {
+                if (window.confirm(`Ponovno odprem nalog ${o.number}?`)) closeOrder.mutate("reopen");
+              }}
+            >
+              Ponovno odpri
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              disabled={closeOrder.isPending}
+              onClick={() => {
+                if (window.confirm(`Zaključim nalog ${o.number}, tudi če vsi delavci še niso odgovorili?`)) {
+                  closeOrder.mutate("close");
+                }
+              }}
+            >
+              Zaključi nalog
+            </button>
+          )}
+          {closeOrder.error && (
+            <p className="error" role="alert">
+              {closeOrder.error.message}
+            </p>
+          )}
+        </div>
+      )}
+
       <ManagerNotes notes={o.notes} />
 
       {o.status !== "ZAKLJUCEN" && (
@@ -270,7 +345,7 @@ export default function ManagerOrder() {
           )}
         </div>
 
-        {o.status !== "ZAKLJUCEN" && !editing && (
+        {!editing && (
           <button className="btn-secondary" onClick={startEdit}>
             Spremeni delavce
           </button>
@@ -304,6 +379,25 @@ export default function ManagerOrder() {
           </div>
         )}
       </div>
+
+      {o.edits.length > 0 && (
+        <div className="section panel">
+          <h3 className="panel-title">
+            <span className="pt-ic"><IconHistory size={18} /></span>
+            Spremembe
+          </h3>
+          {o.edits.map((e) => (
+            <div key={e.id} className="edit-row">
+              <small className="muted">
+                {e.editedBy.name}, {dayLabel(dayKey(e.createdAt))} {formatTime(e.createdAt)}
+              </small>
+              {e.changes.map((c, i) => (
+                <p key={i}>{changeText(c)}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="section panel">
         <h3 className="panel-title">Stanje naloga po dnevih</h3>

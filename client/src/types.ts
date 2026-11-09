@@ -91,7 +91,17 @@ export type DayStatusLog = {
   user: { id: string; name: string };
 };
 
+export type OrderEditChange = { field: string; old: string | null; new: string | null };
+
+export type WorkOrderEdit = {
+  id: string;
+  createdAt: string;
+  changes: OrderEditChange[];
+  editedBy: { id: string; name: string };
+};
+
 export type WorkOrderDetail = WorkOrder & {
+  edits: WorkOrderEdit[];
   dayStatuses: DayStatus[];
   dayLogs: DayStatusLog[];
   manager: { id: string; name: string };

@@ -1886,3 +1886,15 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .pa-actions .btn-primary, .pa-actions .btn-secondary { flex: 1 1 140px; }
 .pa-pick { margin-top: var(--s3); }
 .role-select { min-height: 40px; padding: 0 var(--s2); border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--paper); font: inherit; font-size: 13px; }
+
+/* ---------- Uredi nalog ---------- */
+.order-actions { display: grid; gap: var(--s3); margin: var(--s4) 0; }
+@media (min-width: 560px) { .order-actions { grid-template-columns: 1fr 1fr; } .order-actions .error { grid-column: 1 / -1; } }
+.edit-form .btn-primary, .edit-form .btn-secondary { width: 100%; margin-top: var(--s3); }
+.mat-edit { display: flex; gap: var(--s2); align-items: center; margin-bottom: var(--s2); }
+.mat-edit input { flex: 1; min-width: 0; min-height: 44px; padding: 0 var(--s3); border: 1.5px solid var(--line); border-radius: var(--r-sm); font: inherit; }
+.mat-edit input:focus { outline: 3px solid var(--acc); outline-offset: 1px; }
+.checks > .btn-mini { margin: var(--s2) 0; }
+.edit-row { padding: var(--s3) 0; border-bottom: 1px solid var(--fog); }
+.edit-row:last-child { border-bottom: 0; }
+.edit-row p { margin: 4px 0 0; font-size: 15px; }
