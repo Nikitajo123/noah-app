@@ -482,7 +482,8 @@ export default function ManagerOrder() {
           <span className="pt-ic"><IconBox size={18} /></span>
           Material
         </h3>
-        {o.materials.map((m) => (
+        {!o.materials.some((m) => m.name.trim()) && <p className="muted">Ni materiala.</p>}
+        {o.materials.filter((m) => m.name.trim()).map((m) => (
           <div key={m.id} className="kv">
             <span>{m.name}</span>
             <b>{m.usedQty ?? "-"}</b>
