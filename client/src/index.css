@@ -1594,7 +1594,7 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .pg .field input:focus, .pg .field textarea:focus, .pg .field select:focus { background-color: var(--paper); border-color: var(--acc); }
 .pg .checks { border: 0; border-radius: var(--r-lg); background: var(--bg); padding: var(--s3) var(--s4) var(--s2); }
 .pg .checks legend { padding: 0; float: left; width: 100%; margin-bottom: var(--s2); font-size: 15px; font-weight: 500; }
-.pg .checks .check { clear: both; }
+.pg .checks .check, .pg .checks .mat-edit, .pg .checks > p, .pg .checks > .btn-mini { clear: both; }
 
 .pg .btn-secondary { border: 0; background: var(--paper); box-shadow: var(--card-sh); border-radius: var(--r-xl); min-height: 60px; }
 .pg .btn-primary { border-radius: var(--r-xl); min-height: 60px; }
