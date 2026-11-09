@@ -127,7 +127,10 @@ const createSchema = z.object({
   plannedHours: z.number().optional(),
   dueDate: z.coerce.date(),
   workDate: z.coerce.date().optional(),
-  materials: z.array(z.string()).default([]),
+  materials: z
+    .array(z.string())
+    .default([])
+    .transform((list) => list.map((m) => m.trim()).filter(Boolean)),
 });
 
 async function nextNumber() {

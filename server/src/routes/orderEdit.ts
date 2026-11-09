@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { requireAuth } from "../auth";
-import { canManageProject, requireManager, scopedOrder } from "../permissions";
+import { canEditProjects, canManageProject, requireManager, scopedOrder } from "../permissions";
 import { listInclude, person, shape } from "./workOrders";
 
 // Manager edits of a work order: Uredi nalog, change workers, close and reopen. Every change
@@ -59,6 +59,8 @@ const editSchema = z.object({
     .array(z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(200) }))
     .optional(),
   workerIds: z.array(z.string().uuid()).min(1).optional(),
+  // Only Admin and Vodja gradbišč may set the status directly.
+  status: z.enum(["NOV", "V_DELU", "ZAKLJUCEN", "PROBLEM"]).optional(),
 });
 
 orderEditRouter.patch("/:id", requireAuth, requireManager, async (req, res) => {
@@ -107,6 +109,23 @@ orderEditRouter.patch("/:id", requireAuth, requireManager, async (req, res) => {
       changes.push({ field: key, old: dateText(order[key]), new: dateText(v) });
       update[key] = v;
     }
+  }
+
+  if (data.status !== undefined && data.status !== order.status) {
+    if (!canEditProjects(req.user!)) {
+      return res.status(403).json({ error: "Ni dovoljenja za spremembo statusa" });
+    }
+    if (data.status === "ZAKLJUCEN") {
+      const running = await prisma.timeEntry.findFirst({
+        where: { workOrderId: id, endedAt: null },
+        include: { user: person },
+      });
+      if (running) {
+        return res.status(400).json({ error: `${running.user.name} še dela na tem nalogu. Najprej naj konča delo.` });
+      }
+    }
+    changes.push({ field: "status", old: order.status, new: data.status });
+    update.status = data.status;
   }
 
   // Materials: entries with id are kept (and maybe renamed), without id are new, missing ones are removed.

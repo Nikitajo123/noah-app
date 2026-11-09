@@ -1,7 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { Project, WorkOrderDetail } from "../types";
+import { useAuth } from "../auth";
+import { STATUS_LABEL } from "../format";
+import type { Project, Status, WorkOrderDetail } from "../types";
+
+const STATUSES: Status[] = ["NOV", "V_DELU", "PROBLEM", "ZAKLJUCEN"];
 
 type MaterialRow = { key: string; id?: string; name: string };
 
@@ -11,6 +15,9 @@ const UNITS = ["kos", "m", "m²", "kg"];
 // "Uredi nalog": edits every field of an order in any status. The server logs each change.
 export default function OrderEditForm({ order, onClose }: { order: WorkOrderDetail; onClose: () => void }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  // Admin and Vodja gradbišč may set the status directly.
+  const canSetStatus = user?.role === "VODJA" || user?.role === "VODJA_GRADBISC";
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => api<Project[]>("/projects") });
   const workers = useQuery({
     queryKey: ["workers"],
@@ -25,9 +32,11 @@ export default function OrderEditForm({ order, onClose }: { order: WorkOrderDeta
   const [workDate, setWorkDate] = useState(dayKey(order.workDate));
   const [due, setDue] = useState(dayKey(order.dueDate));
   const [materials, setMaterials] = useState<MaterialRow[]>(
-    order.materials.map((m) => ({ key: m.id, id: m.id, name: m.name }))
+    // Blank material rows are left out, so no empty "Odstrani" row shows up.
+    order.materials.filter((m) => m.name.trim()).map((m) => ({ key: m.id, id: m.id, name: m.name }))
   );
   const [workerIds, setWorkerIds] = useState(order.workers.map((w) => w.id));
+  const [status, setStatus] = useState<Status>(order.status);
 
   const save = useMutation({
     mutationFn: () =>
@@ -45,6 +54,7 @@ export default function OrderEditForm({ order, onClose }: { order: WorkOrderDeta
             .filter((m) => m.name.trim())
             .map((m) => ({ ...(m.id ? { id: m.id } : {}), name: m.name.trim() })),
           workerIds,
+          ...(canSetStatus && status !== order.status ? { status } : {}),
         }),
       }),
     onSuccess: () => {
@@ -69,6 +79,18 @@ export default function OrderEditForm({ order, onClose }: { order: WorkOrderDeta
   return (
     <form className="section panel edit-form" onSubmit={submit}>
       <h3 className="panel-title">Uredi nalog</h3>
+      {canSetStatus && (
+        <label className="field">
+          Status
+          <select value={status} onChange={(e) => setStatus(e.target.value as Status)}>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="field">
         Naloga
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
