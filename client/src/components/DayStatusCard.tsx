@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import VoiceButton from "./VoiceButton";
+import PhotoSection from "./PhotoSection";
+import { useAuth } from "../auth";
 import { IconCheck } from "./Icons";
 import type { WorkOrderDetail } from "../types";
 
@@ -12,6 +14,7 @@ const dayText = (key: string) =>
   new Date(`${key}T12:00:00`).toLocaleDateString("sl-SI", { day: "numeric", month: "numeric" });
 
 // Worker's answer for today: is the order done (DA) or not (NE), plus a note. Saves by itself.
+// DA is only saved once this worker has at least one photo of the finished work (kind KONCANO).
 export default function DayStatusCard({
   order,
   running,
@@ -20,7 +23,9 @@ export default function DayStatusCard({
   running: boolean;
 }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const today = todayKey();
+  const hasFinalPhoto = order.photos.some((p) => p.kind === "KONCANO" && p.userId === user!.id);
   const todayRow = order.dayStatuses.find((s) => s.date.slice(0, 10) === today);
   const earlier = order.dayStatuses.find((s) => s.date.slice(0, 10) !== today);
 
@@ -28,6 +33,12 @@ export default function DayStatusCard({
   const [note, setNote] = useState(todayRow?.note ?? "");
   const [save, setSave] = useState<Save>("idle");
   const [error, setError] = useState("");
+  // DA was chosen but is waiting for the first photo of the finished work.
+  const [needsPhoto, setNeedsPhoto] = useState(false);
+  const noteRef = useRef(note);
+  useEffect(() => {
+    noteRef.current = note;
+  });
 
   const timer = useRef<number | null>(null);
   const seq = useRef(0);
@@ -64,7 +75,7 @@ export default function DayStatusCard({
   function changeNote(v: string, now: boolean) {
     setNote(v);
     if (timer.current) window.clearTimeout(timer.current);
-    if (done === null) return;
+    if (done === null || needsPhoto) return;
     if (done === false && !v.trim()) {
       setSave("idle");
       return;
@@ -92,8 +103,14 @@ export default function DayStatusCard({
         }
       }
       setDone(true);
-      void persist(true, note);
+      if (hasFinalPhoto) {
+        void persist(true, note);
+      } else {
+        setNeedsPhoto(true);
+        setSave("idle");
+      }
     } else {
+      setNeedsPhoto(false);
       setDone(false);
       if (note.trim()) void persist(false, note);
       else setSave("idle");
@@ -132,6 +149,24 @@ export default function DayStatusCard({
         </p>
       )}
 
+      {done === true && needsPhoto && (
+        <div className="ds-needs-photo">
+          <p>
+            <b>Dodaj fotografijo končanega dela.</b> Nalog se zaključi, ko se prva fotografija naloži.
+          </p>
+          <PhotoSection
+            orderId={order.id}
+            photos={order.photos}
+            kind="KONCANO"
+            compact
+            onUploaded={() => {
+              setNeedsPhoto(false);
+              void persist(true, noteRef.current);
+            }}
+          />
+        </div>
+      )}
+
       {done !== null && (
         <div className="ds-note">
           <label className="field">
@@ -161,7 +196,7 @@ export default function DayStatusCard({
       {closed && done === true && (
         <p className="hint">Nalog je zaključen. Opombo in fotografije lahko še dopolnjuješ.</p>
       )}
-      {!closed && done === true && save === "saved" && (
+      {!closed && done === true && !needsPhoto && save === "saved" && (
         <p className="hint">Čakamo še na ostale delavce na tem nalogu.</p>
       )}
     </div>

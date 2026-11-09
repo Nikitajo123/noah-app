@@ -25,14 +25,19 @@ type Item = {
 };
 
 // Photos upload as soon as they are picked. Each one has its own id, so a retry never duplicates it.
+// compact: no panel and no saved photos, used inside the DA step. onUploaded runs after each upload.
 export default function PhotoSection({
   orderId,
   photos,
   kind,
+  compact = false,
+  onUploaded,
 }: {
   orderId: string;
   photos: Photo[];
   kind: PhotoKind;
+  compact?: boolean;
+  onUploaded?: () => void;
 }) {
   const qc = useQueryClient();
   const [items, setItems] = useState<Item[]>([]);
@@ -60,6 +65,7 @@ export default function PhotoSection({
       fd.append("photo", small);
       await api("/photos", { method: "POST", body: fd });
       patch(item.id, { state: "done" });
+      onUploaded?.();
       qc.invalidateQueries({ queryKey: ["order", orderId] });
     } catch (e) {
       patch(item.id, { state: "err", error: e instanceof Error ? e.message : "Napaka" });
@@ -94,16 +100,18 @@ export default function PhotoSection({
   }
 
   const uploaded = new Set(items.filter((i) => i.state === "done").map((i) => i.id));
-  const saved = photos.filter((p) => !items.some((i) => i.id === p.id));
+  const saved = compact ? [] : photos.filter((p) => !items.some((i) => i.id === p.id));
   const doneCount = uploaded.size;
   const busy = items.some((i) => i.state === "wait" || i.state === "up");
 
   return (
-    <div className="section panel">
-      <h3 className="panel-title">
-        <span className="pt-ic"><IconCamera size={18} /></span>
-        Fotografije
-      </h3>
+    <div className={compact ? "ds-photo" : "section panel"}>
+      {!compact && (
+        <h3 className="panel-title">
+          <span className="pt-ic"><IconCamera size={18} /></span>
+          Fotografije
+        </h3>
+      )}
       <div className="photo-btns">
         <label className="tile wide">
           <IconCamera size={24} />

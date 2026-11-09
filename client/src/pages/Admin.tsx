@@ -1,13 +1,15 @@
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import StatusChip from "../components/StatusChip";
-import type { Project, Role, WorkOrder } from "../types";
+import { Link } from "react-router-dom";
+import type { Project, Role, WorkOrder, WorkOrderDetail } from "../types";
 import { EmptyState, Skeleton } from "../components/States";
 import { IconCheck } from "../components/Icons";
 import TeamsAdmin from "../components/TeamsAdmin";
 import ResetPassword from "../components/ResetPassword";
 import ProjectsAdmin from "../components/ProjectsAdmin";
+import OrderEditForm from "../components/OrderEditForm";
 import { useAuth } from "../auth";
 import { ROLE_LABEL } from "../format";
 
@@ -171,10 +173,19 @@ function OrderForm() {
   );
 }
 
+// Loads the full order, then shows the same "Uredi nalog" form as on the order page.
+function OrderEditInline({ id, onClose }: { id: string; onClose: () => void }) {
+  const q = useQuery({ queryKey: ["order", id], queryFn: () => api<WorkOrderDetail>(`/work-orders/${id}`) });
+  if (q.isLoading) return <Skeleton rows={1} variant="line" />;
+  if (q.error || !q.data) return <p className="error">{q.error?.message ?? "Naloga ni"}</p>;
+  return <OrderEditForm order={q.data} onClose={onClose} />;
+}
+
 function OrdersList() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user!.role === "VODJA";
+  const [editId, setEditId] = useState<string | null>(null);
   const q = useQuery({ queryKey: ["all-orders"], queryFn: () => api<WorkOrder[]>("/work-orders") });
   const del = useMutation({
     mutationFn: (id: string) => api(`/work-orders/${id}`, { method: "DELETE" }),
@@ -191,15 +202,25 @@ function OrdersList() {
       {q.data?.length === 0 && <EmptyState>Ni nalogov.</EmptyState>}
       {del.error && <p className="error">{del.error.message}</p>}
       {q.data?.map((o) => (
-        <div key={o.id} className="arow">
+        <Fragment key={o.id}>
+        <div className="arow">
           <div>
-            <b>{o.number}</b>
+            <Link to={`/nalog/${o.id}`} className="dp-link">
+              {o.number}
+            </Link>
             <br />
             <small className="muted">
               {o.project.name}, {o.worker.name}
             </small>
           </div>
           <StatusChip status={o.status} />
+          <button
+            className="btn-mini neutral"
+            aria-expanded={editId === o.id}
+            onClick={() => setEditId(editId === o.id ? null : o.id)}
+          >
+            Uredi
+          </button>
           {isAdmin && (
           <button
             className="btn-mini"
@@ -218,6 +239,8 @@ function OrdersList() {
           </button>
           )}
         </div>
+        {editId === o.id && <OrderEditInline id={o.id} onClose={() => setEditId(null)} />}
+        </Fragment>
       ))}
     </div>
   );
@@ -350,7 +373,7 @@ function RoleSelect({ user }: { user: UserRow }) {
   );
 }
 
-// Tabs per role: Admin all, Vodja gradbišč without users and teams, Vodja del only orders.
+// Tabs per role: Admin all, Vodja gradbišč without users and teams, Vodja dela only orders.
 const TABS: { id: Tab; label: string; roles: Role[] }[] = [
   { id: "order", label: "Nov nalog", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },
   { id: "orders", label: "Nalogi", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },

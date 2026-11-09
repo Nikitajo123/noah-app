@@ -3,7 +3,7 @@ import type { Role, Status, WorkOrder } from "./types";
 export const ROLE_LABEL: Record<Role, string> = {
   VODJA: "Admin",
   VODJA_GRADBISC: "Vodja gradbišč",
-  VODJA_DEL: "Vodja del",
+  VODJA_DEL: "Vodja dela",
   DELAVEC: "Delavec",
 };
 

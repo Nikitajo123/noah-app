@@ -6,7 +6,6 @@ import {
   assignedProjectIds,
   canEditProjects,
   canManageProject,
-  isAdmin,
   requireAdmin,
   requireManager,
 } from "../permissions";
@@ -56,13 +55,7 @@ projectsRouter.post("/", async (req, res) => {
   if (!canEditProjects(req.user!)) return res.status(403).json({ error: "Ni dovoljenja" });
   const parsed = projectSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Vnesi ime in lokacijo" });
-  const project = await prisma.project.create({
-    data: {
-      ...parsed.data,
-      // A Vodja gradbišč automatically belongs to the gradbišče he creates.
-      ...(isAdmin(req.user!) ? {} : { assignments: { create: [{ userId: req.user!.id }] } }),
-    },
-  });
+  const project = await prisma.project.create({ data: parsed.data });
   res.status(201).json(project);
 });
 
@@ -94,11 +87,11 @@ projectsRouter.delete("/:id", requireAdmin, async (req, res) => {
 });
 
 const managersSchema = z.object({
-  role: z.enum(["VODJA_GRADBISC", "VODJA_DEL"]),
+  role: z.literal("VODJA_DEL"),
   userIds: z.array(z.string().uuid()),
 });
 
-// Replaces the list of Vodje del (or Vodje gradbišč) on a gradbišče.
+// Replaces the list of Vodje dela on a gradbišče (Admin and Vodja gradbišč).
 projectsRouter.put("/:id/managers", async (req, res) => {
   const id = req.params.id as string;
   const parsed = managersSchema.safeParse(req.body);
@@ -106,10 +99,7 @@ projectsRouter.put("/:id/managers", async (req, res) => {
   const { role, userIds } = parsed.data;
   const user = req.user!;
 
-  const allowed =
-    isAdmin(user) ||
-    (user.role === "VODJA_GRADBISC" && role === "VODJA_DEL" && (await canManageProject(user, id)));
-  if (!allowed) return res.status(403).json({ error: "Ni dovoljenja" });
+  if (!canEditProjects(user)) return res.status(403).json({ error: "Ni dovoljenja" });
 
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project) return res.status(404).json({ error: "Gradbišča ni" });

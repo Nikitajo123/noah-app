@@ -103,36 +103,36 @@ if (kovacOrder) {
   await check("delavec izbriše nalog", worker, "DELETE", `/work-orders/${kovacOrder.id}`, undefined, 403);
 }
 
-console.log("\nVodja del");
-await check("vodja del vidi samo svoja gradbišča", vd, "GET", "/projects", undefined, 200, (d) =>
+console.log("\nVodja dela");
+await check("vodja dela vidi samo svoja gradbišča", vd, "GET", "/projects", undefined, 200, (d) =>
   noKovac(d) || (d.length === 1 && d[0].id === novak.id ? "" : `vidi ${d.length} gradbišč`)
 );
-await check("vodja del ne vidi Hiše Kovač", vd, "GET", `/projects/${kovac.id}`, undefined, 404);
+await check("vodja dela ne vidi Hiše Kovač", vd, "GET", `/projects/${kovac.id}`, undefined, 404);
 if (kovacOrder) {
-  await check("vodja del ne vidi naloga v Hiši Kovač", vd, "GET", `/work-orders/${kovacOrder.id}`, undefined, 404);
+  await check("vodja dela ne vidi naloga v Hiši Kovač", vd, "GET", `/work-orders/${kovacOrder.id}`, undefined, 404);
 }
-await check("vodja del: seznam nalogov brez Hiše Kovač", vd, "GET", "/work-orders", undefined, 200, noKovac);
-await check("vodja del: pregled brez Hiše Kovač", vd, "GET", "/overview", undefined, 200, noKovac);
-await check("vodja del: dnevni pregled brez Hiše Kovač", vd, "GET", "/daily-overview", undefined, 200, (d) => noKovac(d.projects));
-await check("vodja del: dnevni pregled s filtrom Hiša Kovač je prazen", vd, "GET", `/daily-overview?projectId=${kovac.id}`, undefined, 200, (d) =>
+await check("vodja dela: seznam nalogov brez Hiše Kovač", vd, "GET", "/work-orders", undefined, 200, noKovac);
+await check("vodja dela: pregled brez Hiše Kovač", vd, "GET", "/overview", undefined, 200, noKovac);
+await check("vodja dela: dnevni pregled brez Hiše Kovač", vd, "GET", "/daily-overview", undefined, 200, (d) => noKovac(d.projects));
+await check("vodja dela: dnevni pregled s filtrom Hiša Kovač je prazen", vd, "GET", `/daily-overview?projectId=${kovac.id}`, undefined, 200, (d) =>
   d.projects.length === 0 ? "" : "vrne podatke"
 );
-await check("vodja gradbišč: dnevni pregled brez Hiše Kovač", vg, "GET", "/daily-overview", undefined, 200, (d) => noKovac(d.projects));
+await check("vodja gradbišč: dnevni pregled", vg, "GET", "/daily-overview", undefined, 200);
 await check("admin: dnevni pregled", admin, "GET", "/daily-overview", undefined, 200);
-await check("vodja del ne more ustvariti gradbišča", vd, "POST", "/projects", { name: "Test", location: "X" }, 403);
-await check("vodja del ne more urejati gradbišča", vd, "PATCH", `/projects/${novak.id}`, { name: "X", location: "Y" }, 403);
-await check("vodja del ne more dodeliti vodij", vd, "PUT", `/projects/${novak.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 403);
-await check("vodja del ne more ustvariti uporabnika", vd, "POST", "/users", {}, 403);
-await check("vodja del ne more urejati ekip", vd, "POST", "/teams", {}, 403);
-await check("vodja del lahko dobi seznam delavcev", vd, "GET", "/workers", undefined, 200);
-await check("vodja del lahko dobi seznam vodij", vd, "GET", "/workers/managers", undefined, 200);
-await check("vodja del ne more ustvariti naloga v Hiši Kovač", vd, "POST", "/work-orders", {
+await check("vodja dela ne more ustvariti gradbišča", vd, "POST", "/projects", { name: "Test", location: "X" }, 403);
+await check("vodja dela ne more urejati gradbišča", vd, "PATCH", `/projects/${novak.id}`, { name: "X", location: "Y" }, 403);
+await check("vodja dela ne more dodeliti vodij", vd, "PUT", `/projects/${novak.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 403);
+await check("vodja dela ne more ustvariti uporabnika", vd, "POST", "/users", {}, 403);
+await check("vodja dela ne more urejati ekip", vd, "POST", "/teams", {}, 403);
+await check("vodja dela lahko dobi seznam delavcev", vd, "GET", "/workers", undefined, 200);
+await check("vodja dela lahko dobi seznam vodij", vd, "GET", "/workers/managers", undefined, 200);
+await check("vodja dela ne more ustvariti naloga v Hiši Kovač", vd, "POST", "/work-orders", {
   projectId: kovac.id,
   workerIds: [luka.id],
   description: "Test",
   dueDate: today,
 }, 403);
-const created = await check("vodja del ustvari nalog v Hiši Novak", vd, "POST", "/work-orders", {
+const created = await check("vodja dela ustvari nalog v Hiši Novak", vd, "POST", "/work-orders", {
   projectId: novak.id,
   workerIds: [marko.id],
   description: "Test pravic (izbriše se sam)",
@@ -141,14 +141,14 @@ const created = await check("vodja del ustvari nalog v Hiši Novak", vd, "POST",
 }, 201);
 const testOrderId = created.data?.id;
 if (testOrderId) {
-  await check("vodja del zamenja delavca na svojem nalogu", vd, "PUT", `/work-orders/${testOrderId}/workers`, { workerIds: [luka.id] }, 200);
-  await check("vodja del doda opombo", vd, "POST", `/work-orders/${testOrderId}/notes`, { text: "Test opomba" }, 201);
-  await check("vodja del ne more izbrisati naloga", vd, "DELETE", `/work-orders/${testOrderId}`, undefined, 403);
+  await check("vodja dela zamenja delavca na svojem nalogu", vd, "PUT", `/work-orders/${testOrderId}/workers`, { workerIds: [luka.id] }, 200);
+  await check("vodja dela doda opombo", vd, "POST", `/work-orders/${testOrderId}/notes`, { text: "Test opomba" }, 201);
+  await check("vodja dela ne more izbrisati naloga", vd, "DELETE", `/work-orders/${testOrderId}`, undefined, 403);
 
-  console.log("\nUredi nalog (vodja del, Hiša Novak)");
+  console.log("\nUredi nalog (vodja dela, Hiša Novak)");
   const detail = (await call(vd, "GET", `/work-orders/${testOrderId}`)).data;
   const screw = detail.materials.find((m) => m.name === "vijaki");
-  await check("vodja del uredi opis, rok in material", vd, "PATCH", `/work-orders/${testOrderId}`, {
+  await check("vodja dela uredi opis, rok in material", vd, "PATCH", `/work-orders/${testOrderId}`, {
     description: "Test pravic, urejeno",
     dueDate: today,
     plannedHours: 3,
@@ -157,13 +157,13 @@ if (testOrderId) {
   await check("sprememba je zapisana v zgodovini", vd, "GET", `/work-orders/${testOrderId}`, undefined, 200, (d) =>
     d.edits.length >= 2 ? "" : `samo ${d.edits.length} zapisov`
   );
-  await check("vodja del ne more prestaviti naloga v Hišo Kovač", vd, "PATCH", `/work-orders/${testOrderId}`, { projectId: kovac.id }, 403);
+  await check("vodja dela ne more prestaviti naloga v Hišo Kovač", vd, "PATCH", `/work-orders/${testOrderId}`, { projectId: kovac.id }, 403);
   await check("vodja gradbišč prestavi nalog v Hišo Müller", vg, "PATCH", `/work-orders/${testOrderId}`, { projectId: muller.id }, 200);
-  await check("vodja del zdaj ne vidi naloga (Müller ni njegov)", vd, "GET", `/work-orders/${testOrderId}`, undefined, 404);
+  await check("vodja dela zdaj ne vidi naloga (Müller ni njegov)", vd, "GET", `/work-orders/${testOrderId}`, undefined, 404);
   await check("vodja gradbišč vrne nalog v Hišo Novak", vg, "PATCH", `/work-orders/${testOrderId}`, { projectId: novak.id }, 200);
   if (kovacOrder) {
-    await check("vodja del ne more urejati naloga v Hiši Kovač", vd, "PATCH", `/work-orders/${kovacOrder.id}`, { description: "x" }, 404);
-    await check("vodja gradbišč ne more zaključiti naloga v Hiši Kovač", vg, "POST", `/work-orders/${kovacOrder.id}/close`, undefined, 404);
+    await check("vodja dela ne more urejati naloga v Hiši Kovač", vd, "PATCH", `/work-orders/${kovacOrder.id}`, { description: "x" }, 404);
+    await check("vodja dela ne more zaključiti naloga v Hiši Kovač", vd, "POST", `/work-orders/${kovacOrder.id}/close`, undefined, 404);
   }
   await check("delavec ne more urejati naloga", worker, "PATCH", `/work-orders/${testOrderId}`, { description: "x" }, 403);
 
@@ -183,6 +183,21 @@ if (testOrderId) {
   });
   await check("Marko (ni na nalogu) ne more vnesti stanja", worker, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 404);
   await check("vodja ne more vnesti stanja namesto delavca", vd, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 403);
+  await check("DA brez fotografije končanega dela ni mogoč", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 400);
+  {
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64"
+    );
+    const fd = new FormData();
+    fd.append("id", crypto.randomUUID());
+    fd.append("workOrderId", testOrderId);
+    fd.append("kind", "KONCANO");
+    fd.append("photo", new Blob([png], { type: "image/png" }), "koncano.png");
+    const r = await fetch(BASE + "/photos", { method: "POST", headers: { Authorization: `Bearer ${lukaToken}` }, body: fd });
+    results.push(r.status === 201);
+    console.log(`${r.status === 201 ? "PASS" : "FAIL"}  Luka naloži fotografijo končanega dela  (pričakovano 201, dobljeno ${r.status})`);
+  }
   await check("Luka začne delo", lukaToken, "POST", "/time/start", { workOrderId: testOrderId }, 201);
   await check("DA med delom ni mogoč", lukaToken, "PATCH", `/work-orders/${testOrderId}/day-status`, { done: true }, 400);
   await check("vodja ne more zaključiti, ko delo poteka", vd, "POST", `/work-orders/${testOrderId}/close`, undefined, 400);
@@ -199,38 +214,40 @@ if (testOrderId) {
     d.closed ? "" : "nalog se ni zaključil"
   );
   await check("delavec ne more ponovno odpreti prek poti vodje", lukaToken, "POST", `/work-orders/${testOrderId}/reopen`, undefined, 403);
-  await check("vodja del ponovno odpre nalog", vd, "POST", `/work-orders/${testOrderId}/reopen`, undefined, 200);
-  await check("vodja del zaključi nalog", vd, "POST", `/work-orders/${testOrderId}/close`, undefined, 200);
-  await check("vodja del uredi zaključen nalog", vd, "PATCH", `/work-orders/${testOrderId}`, { plannedHours: 4 }, 200);
+  await check("vodja dela ponovno odpre nalog", vd, "POST", `/work-orders/${testOrderId}/reopen`, undefined, 200);
+  await check("vodja dela zaključi nalog", vd, "POST", `/work-orders/${testOrderId}/close`, undefined, 200);
+  await check("vodja dela uredi zaključen nalog", vd, "PATCH", `/work-orders/${testOrderId}`, { plannedHours: 4 }, 200);
   await check("nalog ostane zaključen po urejanju", lukaToken, "GET", `/work-orders/${testOrderId}`, undefined, 200, (d) =>
     d.status === "ZAKLJUCEN" ? "" : `status ${d.status}`
   );
 }
-await check("vodja del: ure po gradbiščih", vd, "GET", "/project-hours", undefined, 200, (d) =>
+await check("vodja dela: ure po gradbiščih", vd, "GET", "/project-hours", undefined, 200, (d) =>
   d.projects.some((p) => p.projectId === kovac.id) ? "vidi Hišo Kovač" : ""
 );
 
 console.log("\nVodja gradbišč");
-await check("vodja gradbišč vidi Novak in Müller", vg, "GET", "/projects", undefined, 200, (d) =>
-  noKovac(d) || (d.length === 2 ? "" : `vidi ${d.length} gradbišč`)
+await check("vodja gradbišč vidi vsa gradbišča, tudi Hišo Kovač", vg, "GET", "/projects", undefined, 200, (d) =>
+  d.some((p) => p.id === kovac.id) && d.length >= 3 ? "" : `vidi ${d.length} gradbišč`
 );
-await check("vodja gradbišč ne more dodeliti vodje del v Hiši Kovač", vg, "PUT", `/projects/${kovac.id}/managers`, { role: "VODJA_DEL", userIds: [vdUser.id] }, 403);
-await check("vodja gradbišč ne more dodeliti vodje gradbišč", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_GRADBISC", userIds: [] }, 403);
-await check("vodja gradbišč dodeli vodjo del v Hiši Müller", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_DEL", userIds: [vdUser.id] }, 200);
-await check("vodja del zdaj vidi Hišo Müller", vd, "GET", `/projects/${muller.id}`, undefined, 200);
-await check("vodja gradbišč odstrani vodjo del iz Hiše Müller", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 200);
-await check("vodja del spet ne vidi Hiše Müller", vd, "GET", `/projects/${muller.id}`, undefined, 404);
+await check("vodja gradbišč dodeli vodjo dela v Hiši Kovač", vg, "PUT", `/projects/${kovac.id}/managers`, { role: "VODJA_DEL", userIds: [vdUser.id] }, 200);
+await check("vodja dela zdaj vidi Hišo Kovač", vd, "GET", `/projects/${kovac.id}`, undefined, 200);
+await check("vodja gradbišč odstrani vodjo dela iz Hiše Kovač", vg, "PUT", `/projects/${kovac.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 200);
+await check("vodja dela spet ne vidi Hiše Kovač", vd, "GET", `/projects/${kovac.id}`, undefined, 404);
+await check("vodij gradbišč se ne dodeljuje (vidijo vse)", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_GRADBISC", userIds: [] }, 400);
+await check("vodja gradbišč dodeli vodjo dela v Hiši Müller", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_DEL", userIds: [vdUser.id] }, 200);
+await check("vodja dela zdaj vidi Hišo Müller", vd, "GET", `/projects/${muller.id}`, undefined, 200);
+await check("vodja gradbišč odstrani vodjo dela iz Hiše Müller", vg, "PUT", `/projects/${muller.id}/managers`, { role: "VODJA_DEL", userIds: [] }, 200);
+await check("vodja dela spet ne vidi Hiše Müller", vd, "GET", `/projects/${muller.id}`, undefined, 404);
 const vgProject = await check("vodja gradbišč ustvari gradbišče", vg, "POST", "/projects", { name: "Test gradbišče (izbriše se samo)", location: "Test" }, 201);
 const vgProjectId = vgProject.data?.id;
 if (vgProjectId) {
-  await check("novo gradbišče je samodejno dodeljeno vodji gradbišč", vg, "GET", `/projects/${vgProjectId}`, undefined, 200);
+  await check("vodja gradbišč vidi novo gradbišče", vg, "GET", `/projects/${vgProjectId}`, undefined, 200);
   await check("vodja gradbišč uredi svoje gradbišče", vg, "PATCH", `/projects/${vgProjectId}`, { name: "Test gradbišče 2", location: "Test" }, 200);
   await check("vodja gradbišč ne more izbrisati gradbišča", vg, "DELETE", `/projects/${vgProjectId}`, undefined, 403);
 }
-await check("vodja gradbišč ne more urejati Hiše Kovač", vg, "PATCH", `/projects/${kovac.id}`, { name: "X", location: "Y" }, 403);
+await check("vodja dela ne vidi novega gradbišča (ni dodeljen)", vd, "GET", `/projects/${vgProjectId ?? kovac.id}`, undefined, 404);
 if (kovacOrder) {
-  await check("vodja gradbišč ne vidi naloga v Hiši Kovač", vg, "GET", `/work-orders/${kovacOrder.id}`, undefined, 404);
-  await check("vodja gradbišč ne more dodati opombe v Hiši Kovač", vg, "POST", `/work-orders/${kovacOrder.id}/notes`, { text: "x" }, 404);
+  await check("vodja gradbišč vidi nalog v Hiši Kovač", vg, "GET", `/work-orders/${kovacOrder.id}`, undefined, 200);
 }
 await check("vodja gradbišč ne vidi uporabnikov", vg, "GET", "/users", undefined, 403);
 await check("vodja gradbišč ne more ustvariti uporabnika", vg, "POST", "/users", {}, 403);

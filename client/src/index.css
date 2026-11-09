@@ -1940,3 +1940,9 @@ h1, h2, h3 { letter-spacing: -0.03em; }
   .mside .mtab { font-size: 11px; line-height: 1.15; text-align: center; padding: 0 2px; }
   .mside .mtab .ic { width: 48px; }
 }
+
+/* DA step: photo of the finished work is required */
+.ds-needs-photo { margin-top: var(--s4); padding: var(--s4); border-radius: var(--r-md); border: 2px solid var(--acc); background: #fff8e6; }
+.ds-needs-photo > p { margin: 0 0 var(--s3); font-size: 15px; line-height: 1.45; }
+.adm-orders .edit-form { margin: 0 0 var(--s3); box-shadow: none; border: 1.5px solid var(--line); }
+.adm-orders .arow { flex-wrap: wrap; }

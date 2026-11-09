@@ -4,21 +4,19 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { EmptyState, Skeleton } from "./States";
 import { IconCheck } from "./Icons";
-import type { ManagerRef, Project, Role } from "../types";
+import type { ManagerRef, Project } from "../types";
 
-type ManagerRole = Extract<Role, "VODJA_GRADBISC" | "VODJA_DEL">;
-
+// Vodje dela on one gradbišče. Vodja gradbišč and Admin see every gradbišče, so they need no assignment.
 function ManagersPicker({
   project,
-  role,
   people,
   onDone,
 }: {
   project: Project;
-  role: ManagerRole;
   people: ManagerRef[];
   onDone: () => void;
 }) {
+  const role = "VODJA_DEL";
   const qc = useQueryClient();
   const current = (project.managers ?? []).filter((m) => m.role === role).map((m) => m.id);
   const [picked, setPicked] = useState<string[]>(current);
@@ -40,7 +38,7 @@ function ManagersPicker({
   return (
     <div className="pa-pick">
       <fieldset className="checks">
-        <legend>{role === "VODJA_DEL" ? "Vodje del na gradbišču" : "Vodje gradbišč na gradbišču"}</legend>
+        <legend>Vodje dela na gradbišču</legend>
         {list.length === 0 && <p className="muted">Ni uporabnikov s to vlogo.</p>}
         {list.map((p) => (
           <label key={p.id} className="check">
@@ -66,7 +64,7 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user!.role === "VODJA";
-  const [mode, setMode] = useState<"" | "edit" | "VODJA_DEL" | "VODJA_GRADBISC">("");
+  const [mode, setMode] = useState<"" | "edit" | "managers">("");
   const [name, setName] = useState(project.name);
   const [location, setLocation] = useState(project.location);
 
@@ -87,9 +85,9 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 
-  const names = (role: Role) =>
+  const names = () =>
     (project.managers ?? [])
-      .filter((m) => m.role === role)
+      .filter((m) => m.role === "VODJA_DEL")
       .map((m) => m.name)
       .join(", ") || "nihče";
   const orders = project._count?.workOrders ?? 0;
@@ -100,7 +98,7 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
         <div>
           <b>{project.name}</b>, {project.location}
           <p className="muted">
-            Vodje gradbišč: {names("VODJA_GRADBISC")}. Vodje del: {names("VODJA_DEL")}. Nalogi: {orders}.
+            Vodje dela: {names()}. Nalogi: {orders}.
           </p>
         </div>
       </div>
@@ -110,14 +108,9 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
           <button className="btn-mini neutral" onClick={() => setMode("edit")}>
             Uredi
           </button>
-          <button className="btn-mini neutral" onClick={() => setMode("VODJA_DEL")}>
-            Vodje del
+          <button className="btn-mini neutral" onClick={() => setMode("managers")}>
+            Vodje dela
           </button>
-          {isAdmin && (
-            <button className="btn-mini neutral" onClick={() => setMode("VODJA_GRADBISC")}>
-              Vodje gradbišč
-            </button>
-          )}
           {isAdmin && (
             <button
               className="btn-mini"
@@ -159,8 +152,8 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
           </div>
         </div>
       )}
-      {(mode === "VODJA_DEL" || mode === "VODJA_GRADBISC") && (
-        <ManagersPicker project={project} role={mode} people={people} onDone={() => setMode("")} />
+      {mode === "managers" && (
+        <ManagersPicker project={project} people={people} onDone={() => setMode("")} />
       )}
     </div>
   );

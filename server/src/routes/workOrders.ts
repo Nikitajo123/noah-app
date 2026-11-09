@@ -304,6 +304,13 @@ async function saveDayStatus(req: Request, res: Response) {
   if (!done && !note) {
     return res.status(400).json({ error: "Vnesi, zakaj ni narejeno in kaj ostane" });
   }
+  // A finished order needs at least one photo of the finished work from this worker.
+  if (done && !existing?.done) {
+    const finalPhotos = await prisma.photo.count({ where: { workOrderId: id, userId, kind: "KONCANO" } });
+    if (finalPhotos === 0) {
+      return res.status(400).json({ error: "Najprej dodaj fotografijo končanega dela" });
+    }
+  }
   if (done && order.status !== "ZAKLJUCEN") {
     const mine = await prisma.timeEntry.findFirst({
       where: { workOrderId: id, userId, endedAt: null },

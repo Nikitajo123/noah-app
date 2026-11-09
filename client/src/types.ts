@@ -68,6 +68,7 @@ export type WorkLog = {
 
 export type Photo = {
   id: string;
+  userId?: string;
   kind: PhotoKind;
   path: string;
   takenAt: string;
