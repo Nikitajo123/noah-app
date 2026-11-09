@@ -33,7 +33,7 @@ async function main() {
   const muller = projects.find((p) => p.name === "Hiša Müller")!;
   const kovac = projects.find((p) => p.name === "Hiša Kovač")!;
 
-  // Vodja gradbišč sees every gradbišče. Vodja dela only the assigned ones (Novak), so not Kovač.
+  // Both vodja roles work on every gradbišče.
   await prisma.user.upsert({
     where: { email: "vodja.gradbisc@noah.si" },
     update: {},
@@ -44,14 +44,10 @@ async function main() {
       role: "VODJA_GRADBISC",
     },
   });
-  const vodjaDel = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "vodja.del@noah.si" },
     update: {},
     create: { name: "Tomaž Kranjc", email: "vodja.del@noah.si", passwordHash: hash, role: "VODJA_DEL" },
-  });
-  await prisma.projectAssignment.createMany({
-    data: [{ projectId: novak.id, userId: vodjaDel.id }],
-    skipDuplicates: true,
   });
 
   await prisma.workOrder.upsert({

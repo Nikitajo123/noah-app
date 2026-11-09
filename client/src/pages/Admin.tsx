@@ -348,7 +348,6 @@ function RoleSelect({ user }: { user: UserRow }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["workers"] });
-      qc.invalidateQueries({ queryKey: ["managers"] });
     },
     onError: (e: Error) => window.alert(e.message),
   });
@@ -373,7 +372,7 @@ function RoleSelect({ user }: { user: UserRow }) {
   );
 }
 
-// Tabs per role: Admin all, Vodja gradbišč without users and teams, Vodja dela only orders.
+// Tabs per role: Admin all, Vodja gradbišč also gradbišča, Vodja dela only orders.
 const TABS: { id: Tab; label: string; roles: Role[] }[] = [
   { id: "order", label: "Nov nalog", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },
   { id: "orders", label: "Nalogi", roles: ["VODJA", "VODJA_GRADBISC", "VODJA_DEL"] },

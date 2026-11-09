@@ -28,7 +28,7 @@ export default function ProjectsList() {
         {(projects.isLoading || orders.isLoading) && <Skeleton rows={3} />}
         {projects.error && <p className="error" role="alert">{projects.error.message}</p>}
         {projects.data?.length === 0 && (
-          <p className="muted">Nimaš dodeljenih gradbišč. Admin ali vodja gradbišč te mora dodati.</p>
+          <p className="muted">Ni gradbišč.</p>
         )}
         {projects.data?.map((p) => {
           const list = (orders.data ?? []).filter((o) => o.project.id === p.id);

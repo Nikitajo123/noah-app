@@ -4,67 +4,13 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { EmptyState, Skeleton } from "./States";
 import { IconCheck } from "./Icons";
-import type { ManagerRef, Project } from "../types";
+import type { Project } from "../types";
 
-// Vodje dela on one gradbišče. Vodja gradbišč and Admin see every gradbišče, so they need no assignment.
-function ManagersPicker({
-  project,
-  people,
-  onDone,
-}: {
-  project: Project;
-  people: ManagerRef[];
-  onDone: () => void;
-}) {
-  const role = "VODJA_DEL";
-  const qc = useQueryClient();
-  const current = (project.managers ?? []).filter((m) => m.role === role).map((m) => m.id);
-  const [picked, setPicked] = useState<string[]>(current);
-  const save = useMutation({
-    mutationFn: () =>
-      api(`/projects/${project.id}/managers`, {
-        method: "PUT",
-        body: JSON.stringify({ role, userIds: picked }),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["projects"] });
-      onDone();
-    },
-  });
-  const list = people.filter((p) => p.role === role);
-  const toggle = (id: string) =>
-    setPicked((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-
-  return (
-    <div className="pa-pick">
-      <fieldset className="checks">
-        <legend>Vodje dela na gradbišču</legend>
-        {list.length === 0 && <p className="muted">Ni uporabnikov s to vlogo.</p>}
-        {list.map((p) => (
-          <label key={p.id} className="check">
-            <input type="checkbox" checked={picked.includes(p.id)} onChange={() => toggle(p.id)} />
-            {p.name}
-          </label>
-        ))}
-      </fieldset>
-      {save.error && <p className="error">{save.error.message}</p>}
-      <div className="pa-actions">
-        <button className="btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>
-          {save.isPending ? "Shranjujem..." : "Shrani"}
-        </button>
-        <button className="btn-secondary" onClick={onDone}>
-          Prekliči
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ProjectRow({ project, people }: { project: Project; people: ManagerRef[] }) {
+function ProjectRow({ project }: { project: Project }) {
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user!.role === "VODJA";
-  const [mode, setMode] = useState<"" | "edit" | "managers">("");
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(project.name);
   const [location, setLocation] = useState(project.location);
 
@@ -77,7 +23,7 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["all-orders"] });
-      setMode("");
+      setEditing(false);
     },
   });
   const remove = useMutation({
@@ -85,11 +31,6 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 
-  const names = () =>
-    (project.managers ?? [])
-      .filter((m) => m.role === "VODJA_DEL")
-      .map((m) => m.name)
-      .join(", ") || "nihče";
   const orders = project._count?.workOrders ?? 0;
 
   return (
@@ -97,19 +38,14 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
       <div className="pa-head">
         <div>
           <b>{project.name}</b>, {project.location}
-          <p className="muted">
-            Vodje dela: {names()}. Nalogi: {orders}.
-          </p>
+          <p className="muted">Nalogi: {orders}</p>
         </div>
       </div>
 
-      {mode === "" && (
+      {!editing && (
         <div className="pa-actions">
-          <button className="btn-mini neutral" onClick={() => setMode("edit")}>
+          <button className="btn-mini neutral" onClick={() => setEditing(true)}>
             Uredi
-          </button>
-          <button className="btn-mini neutral" onClick={() => setMode("managers")}>
-            Vodje dela
           </button>
           {isAdmin && (
             <button
@@ -127,7 +63,7 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
       )}
       {remove.error && <p className="error">{remove.error.message}</p>}
 
-      {mode === "edit" && (
+      {editing && (
         <div className="pa-pick">
           <label className="field">
             Ime gradbišča
@@ -146,14 +82,11 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
             >
               {update.isPending ? "Shranjujem..." : "Shrani"}
             </button>
-            <button className="btn-secondary" onClick={() => setMode("")}>
+            <button className="btn-secondary" onClick={() => setEditing(false)}>
               Prekliči
             </button>
           </div>
         </div>
-      )}
-      {mode === "managers" && (
-        <ManagersPicker project={project} people={people} onDone={() => setMode("")} />
       )}
     </div>
   );
@@ -162,10 +95,6 @@ function ProjectRow({ project, people }: { project: Project; people: ManagerRef[
 export default function ProjectsAdmin() {
   const qc = useQueryClient();
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => api<Project[]>("/projects") });
-  const people = useQuery({
-    queryKey: ["managers"],
-    queryFn: () => api<ManagerRef[]>("/workers/managers"),
-  });
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [done, setDone] = useState("");
@@ -218,7 +147,7 @@ export default function ProjectsAdmin() {
         {projects.error && <p className="error">{projects.error.message}</p>}
         {projects.data?.length === 0 && <EmptyState>Ni gradbišč.</EmptyState>}
         {projects.data?.map((p) => (
-          <ProjectRow key={p.id} project={p} people={people.data ?? []} />
+          <ProjectRow key={p.id} project={p} />
         ))}
       </div>
     </>

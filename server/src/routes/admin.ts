@@ -69,10 +69,7 @@ usersRouter.patch("/:id/role", async (req, res) => {
   }
 
   await prisma.$transaction([
-    // Assignments to gradbišča only make sense for the two vodja roles.
-    ...(role === "VODJA_GRADBISC" || role === "VODJA_DEL"
-      ? []
-      : [prisma.projectAssignment.deleteMany({ where: { userId: id } })]),
+    // Teams only hold workers.
     ...(role === "DELAVEC" ? [] : [prisma.user.update({ where: { id }, data: { teamId: null } })]),
     prisma.user.update({ where: { id }, data: { role } }),
   ]);
