@@ -93,10 +93,12 @@ export async function buildReport(userId: string, date?: string) {
         { timeEntries: { some: { userId, startedAt: day } } },
         { workLogs: { some: { userId, createdAt: day } } },
         { photos: { some: { userId, takenAt: day } } },
+        { dayStatuses: { some: { userId, date: reportDate } } },
       ],
     },
     include: {
       project: true,
+      dayStatuses: { where: { userId, date: reportDate } },
       materials: { orderBy: { name: "asc" } },
       timeEntries: { where: { userId, startedAt: day }, orderBy: { startedAt: "asc" } },
       workLogs: { where: { userId, createdAt: day }, orderBy: { createdAt: "asc" } },
@@ -125,6 +127,10 @@ export async function buildReport(userId: string, date?: string) {
       arrival: entries[0]?.startedAt ?? null,
       departure: running ? null : entries[entries.length - 1]?.endedAt ?? null,
       hours: r2(hours),
+      noHours: entries.length === 0,
+      dayStatus: o.dayStatuses[0]
+        ? { done: o.dayStatuses[0].done, note: o.dayStatuses[0].note }
+        : null,
       logs: o.workLogs.map((l) => ({
         description: l.description,
         quantity: l.quantity,

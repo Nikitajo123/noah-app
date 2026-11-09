@@ -53,8 +53,15 @@ export default function ReportView({ report }: { report: DailyReportData }) {
             </div>
             <div className="kv">
               <span>Ure</span>
-              <b>{formatHours(o.hours)}</b>
+              {o.noHours ? <b className="no-hours">brez ur</b> : <b>{formatHours(o.hours)}</b>}
             </div>
+
+            {o.dayStatus && (
+              <>
+                <p className="rsub">Stanje: {o.dayStatus.done ? "narejeno" : "ni narejeno"}</p>
+                {o.dayStatus.note && <p className="rline">{o.dayStatus.note}</p>}
+              </>
+            )}
 
             <p className="rsub">Opravljeno delo</p>
             {work.length === 0 && <p className="muted rline">Ni vnosov.</p>}

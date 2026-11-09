@@ -1835,3 +1835,43 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .voice-btn .spinner.sm { border-color: rgba(255, 255, 255, 0.25); border-top-color: var(--acc); }
 .voice-time { font-variant-numeric: tabular-nums; }
 .problem-box .voice-row { margin: 0; }
+/* ---------- worker flow: DA / NE, autosave, photo uploads ---------- */
+.yn { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.yn-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 72px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+.yn-btn:active { transform: scale(0.97); }
+.yn-btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+.yn-btn.yes.on { background: var(--acc); border-color: var(--acc); box-shadow: var(--sh-acc); }
+.yn-btn.no.on { background: var(--ink); color: var(--paper); }
+.ds-note { margin-top: var(--s4); }
+.ds-note .field { margin-bottom: var(--s3); }
+.ds-note .field textarea[aria-invalid="true"] { border-color: var(--red); }
+.save-state { min-height: 20px; margin: var(--s2) 0 0; font-size: 14px; font-weight: 600; color: var(--mute); }
+.save-state.error { color: var(--red); }
+.photo-btns { display: grid; gap: var(--s3); }
+.photo-count { margin: var(--s3) 0 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.thumb.up-wait img, .thumb.up-up img { opacity: 0.45; }
+.thumb.up-err img { outline: 2px solid var(--red); outline-offset: -2px; }
+.thumb small .btn-mini { min-height: 32px; padding: 0 var(--s3); font-size: 12px; }
+.small-facts { margin: var(--s3) 0 0; font-size: 13px; line-height: 1.5; color: var(--mute); }
+.dsl-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--fog); font-size: 15px; }
+.dsl-row p { margin: 4px 0 0; font-size: 14px; color: var(--mute); }
+.ds-chip { flex: none; padding: 4px 10px; border-radius: var(--r-pill); font-size: 13px; font-weight: 700; }
+.ds-chip.yes { background: var(--acc); color: var(--ink); }
+.ds-chip.no { background: var(--ink); color: var(--paper); }
+.no-hours { font-weight: 700; color: var(--mute); }
+@media (prefers-reduced-motion: reduce) { .yn-btn:active { transform: none; } }

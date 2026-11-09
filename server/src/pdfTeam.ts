@@ -18,6 +18,8 @@ export type TeamPdfReport = {
     status: string;
     project: { name: string; location: string };
     hours: number;
+    noHours?: boolean;
+    statuses?: { name: string; done: boolean; note: string | null }[];
     workers: {
       name: string;
       arrival: Date | null;
@@ -209,8 +211,16 @@ export function streamTeamReportPdf(
     const ty = doc.y;
     doc.font("B").fontSize(10.5).fillColor(INK);
     text("Ure naloga", M, ty);
-    text(hoursText(o.hours), M, ty, { width: W, align: "right" });
+    text(o.noHours ? "brez ur" : hoursText(o.hours), M, ty, { width: W, align: "right" });
     doc.y = ty + 28;
+
+    if (o.statuses && o.statuses.length > 0) {
+      heading("Stanje");
+      for (const s of o.statuses) {
+        line(`${s.name}: ${s.done ? "narejeno" : "ni narejeno"}${s.note ? `. ${s.note}` : ""}`);
+      }
+      doc.y += 8;
+    }
 
     heading("Opravljeno delo");
     const work = o.logs.filter((l) => l.description !== "Prijavljena težava");

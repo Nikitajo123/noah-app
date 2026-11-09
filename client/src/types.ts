@@ -64,7 +64,27 @@ export type Photo = {
   takenAt: string;
 };
 
+export type DayStatus = {
+  id: string;
+  date: string;
+  done: boolean;
+  note: string | null;
+  updatedAt: string;
+  user: { id: string; name: string };
+};
+
+export type DayStatusLog = {
+  id: string;
+  date: string;
+  done: boolean;
+  note: string | null;
+  createdAt: string;
+  user: { id: string; name: string };
+};
+
 export type WorkOrderDetail = WorkOrder & {
+  dayStatuses: DayStatus[];
+  dayLogs: DayStatusLog[];
   manager: { id: string; name: string };
   timeEntries: TimeEntry[];
   workLogs: WorkLog[];
@@ -88,6 +108,8 @@ export type ReportOrder = {
   arrival: string | null;
   departure: string | null;
   hours: number;
+  noHours: boolean;
+  dayStatus: { done: boolean; note: string | null } | null;
   logs: { description: string; quantity: number | null; unit: string | null; note: string | null }[];
   materials: { name: string; usedQty: number | null }[];
   problems: (string | null)[];
@@ -135,6 +157,8 @@ export type TeamReportOrder = {
   status: Status;
   project: { name: string; location: string };
   hours: number;
+  noHours: boolean;
+  statuses: { userId: string; name: string; done: boolean; note: string | null }[];
   workers: {
     userId: string;
     name: string;

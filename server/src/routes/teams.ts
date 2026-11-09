@@ -132,10 +132,12 @@ async function buildTeamReport(teamId: string, date?: string) {
         { timeEntries: { some: { userId: { in: ids }, startedAt: day } } },
         { workLogs: { some: { userId: { in: ids }, createdAt: day } } },
         { photos: { some: { userId: { in: ids }, takenAt: day } } },
+        { dayStatuses: { some: { userId: { in: ids }, date: reportDate } } },
       ],
     },
     include: {
       project: true,
+      dayStatuses: { where: { userId: { in: ids }, date: reportDate }, include: { user: person } },
       materials: { orderBy: { name: "asc" } },
       timeEntries: {
         where: { userId: { in: ids }, startedAt: day },
@@ -190,6 +192,13 @@ async function buildTeamReport(teamId: string, date?: string) {
       status: o.status,
       project: { name: o.project.name, location: o.project.location },
       hours: r2(orderHours),
+      noHours: workers.length === 0,
+      statuses: o.dayStatuses.map((s) => ({
+        userId: s.userId,
+        name: s.user.name,
+        done: s.done,
+        note: s.note,
+      })),
       workers,
       logs: o.workLogs.map((l) => ({
         author: l.user.name,

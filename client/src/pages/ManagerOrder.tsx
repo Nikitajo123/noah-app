@@ -254,12 +254,20 @@ export default function ManagerOrder() {
               {w.name}
               {w.running && <em className="wk-live"> dela</em>}
             </span>
-            <b>{w.hours.toFixed(2)} h</b>
+            {o.timeEntries.some((e) => e.user?.id === w.id) ? (
+              <b>{w.hours.toFixed(2)} h</b>
+            ) : (
+              <b className="no-hours">brez ur</b>
+            )}
           </div>
         ))}
         <div className="wk-row total">
           <span>Skupaj ur</span>
-          <b>{total.toFixed(2)} h</b>
+          {o.timeEntries.length > 0 ? (
+            <b>{total.toFixed(2)} h</b>
+          ) : (
+            <b className="no-hours">brez ur</b>
+          )}
         </div>
 
         {o.status !== "ZAKLJUCEN" && !editing && (
@@ -298,11 +306,40 @@ export default function ManagerOrder() {
       </div>
 
       <div className="section panel">
+        <h3 className="panel-title">Stanje naloga po dnevih</h3>
+        {o.dayStatuses.length === 0 && <p className="muted">Delavci še niso vnesli stanja.</p>}
+        {o.dayStatuses.map((s) => (
+          <div key={s.id} className="dsl-row">
+            <div>
+              <b>{s.user.name}</b>, {dayLabel(s.date.slice(0, 10))}
+              {s.note && <p>{s.note}</p>}
+            </div>
+            <span className={s.done ? "ds-chip yes" : "ds-chip no"}>
+              {s.done ? "Narejeno" : "Ni narejeno"}
+            </span>
+          </div>
+        ))}
+        {o.dayLogs.length > 0 && (
+          <>
+            <p className="rsub">Zgodovina sprememb</p>
+            {o.dayLogs.map((l) => (
+              <p key={l.id} className="rline muted">
+                {l.user.name}, {dayLabel(dayKey(l.createdAt))} {formatTime(l.createdAt)}:{" "}
+                {l.done ? "narejeno" : "ni narejeno"}
+              </p>
+            ))}
+          </>
+        )}
+      </div>
+
+      <div className="section panel">
         <h3 className="panel-title">
           <span className="pt-ic"><IconClock size={18} /></span>
           Evidenca ur
         </h3>
-        {o.timeEntries.length === 0 && <p className="muted">Delo še ni začeto.</p>}
+        {o.timeEntries.length === 0 && (
+          <p className="muted">{o.status === "ZAKLJUCEN" ? "Brez ur." : "Delo še ni začeto."}</p>
+        )}
         {o.timeEntries.map((e) => (
           <TimeEntryRow key={e.id} entry={e} orderId={o.id} />
         ))}

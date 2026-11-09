@@ -39,9 +39,6 @@ photosRouter.post("/", requireRole("DELAVEC"), upload.single("photo"), async (re
   if (!order || !(await isAssigned(workOrderId, userId))) {
     return res.status(404).json({ error: "Naloga ni" });
   }
-  if (order.status === "ZAKLJUCEN") {
-    return res.status(400).json({ error: "Naloga je zaključena" });
-  }
 
   const photoId = id ?? randomUUID();
   const photo = await prisma.photo.create({

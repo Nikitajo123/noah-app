@@ -1,8 +1,9 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { isAssigned } from "../access";
+import { closeIfAllDone, todayDate } from "../dayStatus";
 
 export const workOrdersRouter = Router();
 workOrdersRouter.use(requireAuth);
@@ -78,6 +79,16 @@ workOrdersRouter.get("/:id", async (req, res) => {
       workLogs: { orderBy: { createdAt: "asc" }, include: { user: person } },
       photos: { orderBy: { takenAt: "asc" } },
       notes: { orderBy: { createdAt: "asc" }, include: { author: person } },
+      dayStatuses: {
+        where: isWorker ? { userId: req.user!.id } : {},
+        orderBy: [{ date: "desc" }, { updatedAt: "desc" }],
+        include: { user: person },
+      },
+      dayLogs: {
+        where: isWorker ? { userId: req.user!.id } : {},
+        orderBy: { createdAt: "asc" },
+        include: { user: person },
+      },
     },
   });
   if (!order) return res.status(404).json({ error: "Naloga ni" });
@@ -283,3 +294,72 @@ workOrdersRouter.patch("/:id/status", requireRole("DELAVEC"), async (req, res) =
   });
   res.json(updated);
 });
+const dayStatusSchema = z.object({
+  id: z.string().uuid().optional(),
+  done: z.boolean().optional(),
+  note: z.string().max(2000).nullable().optional(),
+});
+
+async function saveDayStatus(req: Request, res: Response) {
+  const parsed = dayStatusSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Napačni podatki" });
+  const id = req.params.id as string;
+  const userId = req.user!.id;
+
+  const order = await prisma.workOrder.findUnique({ where: { id } });
+  if (!order || !(await isAssigned(id, userId))) {
+    return res.status(404).json({ error: "Naloga ni" });
+  }
+  if (order.status === "NOV") {
+    return res.status(400).json({ error: "Najprej začni delovni nalog" });
+  }
+
+  const date = todayDate();
+  const key = { workOrderId_userId_date: { workOrderId: id, userId, date } };
+  const existing = await prisma.orderDayStatus.findUnique({ where: key });
+
+  const done = parsed.data.done ?? existing?.done;
+  if (done === undefined) return res.status(400).json({ error: "Izberi DA ali NE" });
+  const note =
+    parsed.data.note !== undefined ? parsed.data.note?.trim() || null : (existing?.note ?? null);
+  if (!done && !note) {
+    return res.status(400).json({ error: "Vnesi, zakaj ni narejeno in kaj ostane" });
+  }
+  if (done && order.status !== "ZAKLJUCEN") {
+    const mine = await prisma.timeEntry.findFirst({
+      where: { workOrderId: id, userId, endedAt: null },
+    });
+    if (mine) return res.status(400).json({ error: "Najprej končaj delo" });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const status = await tx.orderDayStatus.upsert({
+      where: key,
+      update: { done, note },
+      create: {
+        ...(parsed.data.id ? { id: parsed.data.id } : {}),
+        workOrderId: id,
+        userId,
+        date,
+        done,
+        note,
+      },
+    });
+    if (!existing || existing.done !== done) {
+      await tx.orderDayStatusLog.create({ data: { workOrderId: id, userId, date, done, note } });
+    }
+    let reopened = false;
+    let closed = false;
+    if (done) {
+      closed = await closeIfAllDone(tx, id);
+    } else if (order.status === "ZAKLJUCEN") {
+      await tx.workOrder.update({ where: { id }, data: { status: "V_DELU" } });
+      reopened = true;
+    }
+    return { status, closed, reopened };
+  });
+  res.json(result);
+}
+
+workOrdersRouter.post("/:id/day-status", requireRole("DELAVEC"), saveDayStatus);
+workOrdersRouter.patch("/:id/day-status", requireRole("DELAVEC"), saveDayStatus);

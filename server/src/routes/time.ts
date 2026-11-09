@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireRole } from "../auth";
 import { isAssigned } from "../access";
+import { closeIfAllDone } from "../dayStatus";
 
 export const timeRouter = Router();
 timeRouter.use(requireAuth, requireRole("DELAVEC"));
@@ -66,6 +67,8 @@ timeRouter.post("/end", async (req, res) => {
     where: { id: open.id },
     data: { endedAt },
   });
+  // This worker may have been the last one holding the order open after everyone said DA.
+  await closeIfAllDone(prisma, updated.workOrderId);
   res.json({ ...updated, hours: hoursBetween(updated.startedAt, endedAt) });
 });
 
